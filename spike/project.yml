@@ -1,0 +1,25 @@
+# XcodeGen spec for the FoldProbe diagnostic app (Phase 1b spike only).
+# Generate the Xcode project with:  brew install xcodegen && cd spike && xcodegen
+name: FoldProbe
+options:
+  bundleIdPrefix: com.foldpulse.spike
+  deploymentTarget:
+    iOS: "27.1"
+targets:
+  FoldProbe:
+    type: application
+    platform: iOS
+    sources: [FoldProbe]
+    settings:
+      base:
+        # Must be globally unique for a personal (free) team: change the suffix if signing complains.
+        PRODUCT_BUNDLE_IDENTIFIER: com.foldpulse.spike.foldprobe.odthientho
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: FoldProbe
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"

@@ -21,6 +21,8 @@ If (2) fails, the team recommends pausing the project (see the Phase 1 report, c
 
 ## Part 1 — Install FoldProbe (≈ 15 min)
 
+**Easiest:** let Claude Code on your Mac do it. Paste the message in `spike/MAC_SESSION_PROMPT.md`. The manual steps below are the alternative.
+
 FoldProbe is a throwaway diagnostic app. It is **not** FoldPulse and will never ship. It writes a log file on your phone and never uses the network.
 
 1. On the Mac, open Xcode → **File → New → Project… → iOS → App**. Product Name: `FoldProbe`. Interface: **SwiftUI**. Language: **Swift**. Storage: **None**. Uncheck tests.

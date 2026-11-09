@@ -13,7 +13,7 @@ Product and technical decisions, newest first. Only the Founder makes product de
 | D-3 | 2026-11-09 | **Minimum iOS 27.1**, iPhone Duo-focused | Founder (default) | Background assisted mode needs iOS 27.2+ on the device |
 | D-4 | 2026-11-09 | **Manual-only mode with a notice** on non-hinge iPhones and iPads | Founder (default) | Addresses App Review 2.4.1 |
 | D-6 | 2026-11-09 | **Lean v1** (MVP_SCOPE §4.1) | Founder (default) | Medium/Large/inline widgets, heat strip, session stats, inferred toggle and JSON import (pending backup check) move to v1.1 |
-| I-17 | 2026-11-09 | **Move FoldPulse to its own GitHub repository** | Founder (default) | The Founder creates the repo and grants Claude access; history is pushed there |
+| I-17 | 2026-11-09 | **Move FoldPulse to its own GitHub repository** | Founder (default) | Done: `odthientho/FoldPulse` (`main`). Repo is currently **public**; the Founder decides on visibility |
 | T-1 | 2026-11-09 | Event log is the source of truth; aggregates are computed/cached | Architect (Phase 1) | See TECHNICAL_FEASIBILITY §6–§7 |
 | T-2 | 2026-11-09 | SwiftData in the App Group, single writer in the app process; widget writes via a queue file | Architect (Phase 1) | Confirmed or replaced in Phase 3 |
 | T-3 | 2026-11-09 | No networking code, no third-party SDKs | Privacy (Phase 1) | PRIVACY_REVIEW P-1 |
