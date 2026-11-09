@@ -92,6 +92,22 @@ jobs:
           mkdir -p screenshots
           xcrun xcresulttool export attachments --path TestResults.xcresult --output-path screenshots || true
           ls -la screenshots | head -40
+      - name: Print screenshots into the log (compressed, for the project report)
+        if: always()
+        run: |
+          # Artifacts live on blob storage the build workspace can't reach, so small JPEG
+          # copies are also written to this log as base64 between BEGIN/END markers.
+          mkdir -p small
+          echo "BEGIN-MANIFEST"; cat screenshots/manifest.json 2>/dev/null | tr -d '\n' | fold -w 2000; echo; echo "END-MANIFEST"
+          for f in screenshots/*.png; do
+            [ -e "$f" ] || continue
+            name="$(basename "$f" .png)"
+            sips -Z 900 -s format jpeg -s formatOptions 70 "$f" --out "small/$name.jpg" >/dev/null
+            echo "BEGIN-SHOT $name"
+            base64 -i "small/$name.jpg" | tr -d '\n' | fold -w 2000
+            echo
+            echo "END-SHOT"
+          done
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
