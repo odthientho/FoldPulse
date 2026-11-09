@@ -1,7 +1,7 @@
 # FoldPulse — Privacy & Security Review (Phase 1)
 
 **Owner:** Agent 8 — Privacy and Security Engineer · **Reviewed by:** Agent 10 (Compliance), Agent 12 (Independent Reviewer)
-**Version:** 1.0 · 9 November 2026 · **Scope:** design-level review. No code exists yet.
+**Version:** 1.1 · 9 November 2026 · **Scope:** Phase 1 design-level review, plus the Phase 3 code review (§5)
 
 ## 1. Verdict
 
@@ -37,6 +37,17 @@ No identifiers, location, contacts, health data, advertising ID or device finger
 - **Unverified callers:** any user shortcut can call "Record Fold". This is a data-quality issue, not a privacy one; see risk R-25.
 - **Reset:** deletes the store, snapshot, queue and settings, then reloads widgets.
 - **Monetisation:** any future model must use StoreKit only. Ad or analytics SDKs are ruled out.
+
+## 5. Phase 3 code review (Agent 8, independent)
+
+| Requirement | Status in code | Evidence |
+|---|---|---|
+| P-1 No networking | **Met** | No networking symbols in shipping Swift code; CI privacy-guard step fails the build if any appear; CloudKit explicitly `.none` |
+| P-2 Privacy manifest | **Met** | App: no tracking, no collected data, UserDefaults reason `1C8F.1` (App Group suite, the only use). Widget: no required-reason APIs. Corrected after review: the first draft declared an unused reason |
+| P-3 File protection | **Met (verify on device)** | Store directory created with `completeUntilFirstUserAuthentication`; snapshot written with the same protection |
+| No stranded data | **Met** | Release builds never fall back from the App Group to a private location |
+| Debug-only tools | **Met** | Sample data, delete-all and the `-ui-testing` in-memory switch are compiled only in debug builds |
+| P-4/P-5 Export/import safety, P-6 widget privacy | P-6 met (`.privacySensitive()`); P-4/P-5 arrive with Phase 4 export |
 
 ## Sources
 

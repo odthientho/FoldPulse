@@ -38,7 +38,7 @@ extension StoredEvent {
         if let cached = zones[timeZoneID] {
             zone = cached
         } else {
-            zone = TimeZone(identifier: timeZoneID) ?? TimeZone(identifier: "UTC")!
+            zone = TimeZone(identifier: timeZoneID) ?? FoldEvent.fallbackTimeZone
             zones[timeZoneID] = zone
         }
         var event = FoldEvent(id: id, type: type, source: source, timestamp: timestamp, timeZone: zone, note: note,

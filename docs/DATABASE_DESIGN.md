@@ -1,7 +1,7 @@
 # FoldPulse — Database Design
 
 **Owner:** Agent 3 (Architect) with Agent 7 (Data Analyst) · **Reviewed by:** Agent 8 (Privacy), Agent 11 (Performance)
-**Version:** 1.0 · 9 November 2026
+**Version:** 1.1 (corrected after Phase 3 reviews) · 9 November 2026
 
 ---
 
@@ -23,12 +23,12 @@ Core Data stays the fallback if SwiftData blocks something in Phase 4. `EventSto
 
 | Field | Type | Rules |
 |---|---|---|
-| `id` | UUID | **Unique** (`@Attribute(.unique)`). Never changes; the import merge key |
+| `id` | UUID | **Unique.** `EventStore.add` **rejects** an existing id (`StoreError.duplicateID`) because SwiftData's `.unique` would silently overwrite the row. Never changes; the import merge key |
 | `typeRaw` | String | `fold` / `unfold` (`EventType`) |
 | `sourceRaw` | String | `hinge` / `shortcut` / `manual` / `inferred` (`DetectionSource`) |
 | `timestamp` | Date | UTC instant of the event. **Indexed** |
 | `timeZoneID` | String | IANA zone at capture, e.g. `Europe/London`. Kept when the time is edited |
-| `localDay` | String | `YYYY-MM-DD` in the capture zone. **Indexed**; the key for daily buckets |
+| `localDay` | String | `YYYY-MM-DD` in the capture zone. **Indexed**; the key for daily buckets. Recomputed (in the capture zone) when the time is edited (`FoldEvent.setTimestamp`) |
 | `note` | String? | ≤ 500 characters (enforced in Phase 4 UI) |
 | `createdAt` | Date | First insert |
 | `updatedAt` | Date | Bumped on every change; newer wins on import |
@@ -49,15 +49,17 @@ Rows whose `typeRaw` or `sourceRaw` the app doesn't recognise (written by a newe
 | Milestones | `Milestones` | Celebrated once; celebrated set persisted in Phase 4 (`UserDefaults`) |
 | Widget snapshot | `WidgetSnapshot.make` | Written to JSON after each change |
 
-**Performance:** a heavy user (~150 folds a day ≈ 300 events) creates ~110,000 rows a year, about 20–30 MB. Full recomputation is linear and runs off the main thread. If Phase 5 profiling shows a need, Phase 4 can add a per-day cache that edits invalidate (never authoritative).
+**Performance:** a heavy user (~150 folds a day ≈ 300 events) creates ~110,000 rows a year, about 20–30 MB. Statistics are computed **once per reload inside the `EventStore` actor** (`loadState` → `DashboardStats`), off the main thread; views only read the result. Loading reuses the stored `localDay` and caches time zones, so there is no per-row calendar work. Tombstones are filtered in the fetch predicate. If Phase 5 profiling shows a need, per-day aggregate queries on the `localDay` index replace loading every row.
 
 ## 4. Files and protection
 
 | File | Location | Protection | Writer | Readers |
 |---|---|---|---|---|
-| `FoldPulse.store` (+ `-wal`, `-shm`) | App Group container | `completeUntilFirstUserAuthentication` (the iOS default for app data) | App (`EventStore`) | App |
+| `FoldPulse.store` (+ `-wal`, `-shm`) | App Group container, `Store/` directory | `completeUntilFirstUserAuthentication`, **set explicitly on the directory** (new files inherit it). Verified on device in Phase 5 | App (`EventStore`) | App |
 | `WidgetSnapshot.json` | App Group container | `completeUntilFirstUserAuthentication` (set explicitly on write) | App (`SnapshotService`) | Widget |
 | `pending-events` queue (v1.1, widget button) | App Group | Same | Widget | App |
+
+**No silent fallback:** release builds refuse to start (clear message) if the App Group is unavailable, rather than writing data to a private location that would be stranded later. Debug/CI builds fall back to Application Support.
 
 **Backups:** App Group data is included in the user's own iCloud or Finder device backups (PRIVACY_REVIEW P-7). Deleting the app deletes the data.
 
@@ -86,7 +88,7 @@ Readers reject a newer `schemaVersion` and fall back to the empty state instead 
 
 ## 7. Integrity rules
 
-- IDs are unique (enforced by the store).
+- IDs are unique: enforced by `EventStore.add`, which rejects duplicates (tested).
 - Fold and unfold alternation is **checked, not enforced**: violations become `inferred` gaps (Phase 4 reconciliation). Recorded data is never rewritten.
 - Edits keep the original `timeZoneID` and set `isEdited`.
-- Reset removes all rows and files, then reloads widgets.
+- Reset (Phase 4, Settings) will remove all rows, the snapshot and settings, then reload widgets. In Phase 3, `deleteAll` exists and is exposed only in debug builds.

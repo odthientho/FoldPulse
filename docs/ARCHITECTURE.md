@@ -1,7 +1,7 @@
 # FoldPulse — Architecture
 
 **Owner:** Agent 3 — Senior iOS Technical Architect · **Reviewed by:** Agent 6 (Software Engineer), Agent 11 (Performance), Agent 8 (Privacy), Agent 12 (Independent)
-**Version:** 1.0 · 9 November 2026 · **Phase:** 3 (foundation)
+**Version:** 1.1 (revised after agent reviews) · 9 November 2026 · **Phase:** 3 (foundation)
 
 ---
 
@@ -79,7 +79,7 @@ The diagram for the PDF is Figure 2 of the Phase 3 report.
 | Component | Isolation | Notes |
 |---|---|---|
 | SwiftUI views, `AppModel`, `SnapshotService` | `@MainActor` | `AppModel` is `@Observable` and injected with `.environment` |
-| `EventStore` | `@ModelActor` (its own serial executor) | Exchanges only `FoldEvent` (a `Sendable` value type) |
+| `EventStore` | `@ModelActor` (its own serial executor), **created on a detached task** so its context isn't bound to the main thread | Exchanges only `Sendable` values (`FoldEvent`, `LoadedState`); computes `DashboardStats` itself, so statistics never run on the main thread |
 | `FoldPulseCore` | Non-isolated, pure value types | All types `Sendable` |
 | Widget provider | WidgetKit-managed | Reads a file; no shared mutable state |
 
@@ -89,12 +89,13 @@ See **DATABASE_DESIGN.md**. In summary:
 - SwiftData `SchemaV1.StoredEvent` with a `SchemaMigrationPlan` from day one.
 - The store file lives in the App Group container.
 - Rows are tombstoned instead of deleted.
-- File protection is `completeUntilFirstUserAuthentication`, so background writes work while the phone is locked.
+- File protection is `completeUntilFirstUserAuthentication`, **set explicitly** on the store directory, so background writes work while the phone is locked.
+- Release builds never fall back to a private location if the App Group is missing; they show a clear error instead.
 
 ## 7. Widget pipeline
 
-- `SnapshotService.publish` computes a `WidgetSnapshot` (FoldPulseCore), writes it atomically, and calls `WidgetCenter.reloadTimelines(ofKind:)`. That reload is immediate when the app is active, and coalesced to at most one per 5 minutes from the background.
-- The `TodayWidget` timeline has two entries: now, and the **next local midnight**, where "today" shows "—" until refreshed. Nothing is ever shown as live when it isn't (staleness label after 15 minutes).
+- `SnapshotService.publish` writes the precomputed `WidgetSnapshot` atomically and calls `WidgetCenter.reloadTimelines(ofKind:)`. That reload is immediate when the app is active. From the background it is coalesced to at most one per 5 minutes; the last-reload time is kept in the **App Group defaults**, so the throttle holds across short-lived intent processes.
+- The `TodayWidget` timeline has up to three entries: now; the moment the data turns **stale** (shows "as of HH:mm"); and the **next local midnight** ("today" shows "—" until refreshed). The widget also re-reads the snapshot **every 30 minutes**, so a reload the app throttled is never lost.
 
 ## 8. Testing strategy
 
@@ -111,7 +112,8 @@ See **DATABASE_DESIGN.md**. In summary:
 - **CI:** every push to `main` runs `.github/workflows/ci.yml`.
   - On Linux: core tests in the `swift:6.1` container.
   - On macOS: the newest Xcode; core tests, then XcodeGen, then `xcodebuild test` on a simulator.
-  - If the runner's iOS SDK is older than 27.1, CI lowers the deployment target **for a compile check only** and warns. Phase 3 code uses no iOS 27-only API, so this check is meaningful. From Phase 4, hinge code needs the 27.1 SDK.
+  - If the runner's iOS SDK is older than 27.1, CI lowers the deployment target in `project.yml` **for CI only** and says so in the job summary. GitHub's runners currently have the **iOS 26.5 SDK**. Phase 3 code uses no iOS 27-only API, so build and tests are meaningful there. From Phase 4, hinge code needs the 27.1 SDK; it will be compiled conditionally or verified on the Founder's Mac.
+  - A **privacy guard** fails the build if networking symbols appear in shipping Swift code (PRIVACY_REVIEW P-1).
 
 ## 10. Phase 4 extension points
 

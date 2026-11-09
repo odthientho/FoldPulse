@@ -27,10 +27,13 @@ final class ReviewFixTests: XCTestCase {
         XCTAssertEqual(event.localDay, stored)
     }
 
-    func testUnknownTimeZoneFallsBackToUTC() {
+    func testUnknownTimeZoneFallsBackToZeroOffset() {
         var event = Fixture.event(at: "2026-11-09T12:00:00Z")
         event.timeZoneID = "Mars/Olympus_Mons"
-        XCTAssertEqual(event.timeZone.identifier, "UTC")
+        // Check the offset, not the name: Foundation calls this zone "GMT" (CI run 3).
+        XCTAssertEqual(event.timeZone.secondsFromGMT(for: event.timestamp), 0)
+        XCTAssertEqual(LocalDay(date: Fixture.date("2026-11-09T23:30:00Z"), timeZone: event.timeZone),
+                       LocalDay(year: 2026, month: 11, day: 9))
     }
 
     func testDayStartIsInsideTheDayEvenWhenMidnightIsSkipped() {

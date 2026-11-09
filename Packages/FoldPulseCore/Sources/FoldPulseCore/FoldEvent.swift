@@ -70,8 +70,12 @@ public struct FoldEvent: Codable, Sendable, Hashable, Identifiable {
     /// Not deleted and not merged into another event.
     public var isLive: Bool { deletedAt == nil && duplicateOf == nil }
 
-    /// The capture time zone (falls back to UTC if the identifier is unknown).
-    public var timeZone: TimeZone { TimeZone(identifier: timeZoneID) ?? TimeZone(identifier: "UTC")! }
+    /// Zero-offset zone used when a stored identifier is unknown. Note: Foundation
+    /// reports this zone's identifier as "GMT" on both Apple platforms and Linux.
+    public static let fallbackTimeZone = TimeZone(secondsFromGMT: 0)!
+
+    /// The capture time zone (falls back to a zero-offset zone if the identifier is unknown).
+    public var timeZone: TimeZone { TimeZone(identifier: timeZoneID) ?? FoldEvent.fallbackTimeZone }
 
     /// Counts toward totals: live, and not a gap unless gaps are included.
     public func isCounted(includeInferred: Bool) -> Bool {
