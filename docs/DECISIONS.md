@@ -4,6 +4,8 @@ Product and technical decisions, newest first. Only the Founder makes product de
 
 | ID | Date | Decision | Decided by | Context / consequence |
 |---|---|---|---|---|
+| A-3 | 2026-11-09 | **Phase 3 approved** (architecture, foundation, CI green) | Founder | Open: 27.1 build on the Founder's Mac; R-29 (Developer Program); R-28, I-24 |
+| T-10 | 2026-11-09 | Hinge code is compiled behind `HINGE_API` (set in project.yml; CI removes it while runners lack the iOS 27.1 SDK) | Architect (Phase 4) | CI verifies everything else; hinge file verified on the Founder's Mac |
 | A-2 | 2026-11-09 | **Phase 2 approved** (design system, icon, screens, flows, widgets) | Founder | Open items carried: R-28 (verify background counting before pricing), I-24 (inner tab bar when partially folded → check in Phase 3) |
 | C-2r | 2026-11-09 | **Skip the remaining device tests; continue to Phase 2** | Founder | Foreground hinge counting was confirmed informally (5/5). Background automation is unverified (the trigger wasn't found). Background counting is designed as optional; S-1…S-7 become a Phase 5 gate. See SPIKE_RESULTS.md |
 | A-1 | 2026-11-09 | **Phase 1 approved** (feasibility report + documents) | Founder | Recommendation CONDITIONAL GO accepted |
