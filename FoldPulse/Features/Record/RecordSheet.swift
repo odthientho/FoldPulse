@@ -10,6 +10,9 @@ struct RecordSheet: View {
 
     var body: some View {
         NavigationStack {
+            // Scrolls at the medium detent and large text sizes, so nothing truncates
+            // (found in the Phase 4 screenshots).
+            ScrollView {
             VStack(alignment: .leading, spacing: FPSpace.m) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Hinge right now").font(FPFont.label).foregroundStyle(FPColor.text2)
@@ -17,6 +20,7 @@ struct RecordSheet: View {
                     Text(model.hasSeenHinge ? "Automatic counting is on while FoldPulse is open." :
                             "Automatic counting needs iPhone Duo; you can record by hand.")
                         .font(FPFont.caption).foregroundStyle(FPColor.text2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .fpCard(radius: FPRadius.tile)
                 .accessibilityElement(children: .combine)
@@ -46,9 +50,10 @@ struct RecordSheet: View {
 
                 Text("Use manual recording only for folds FoldPulse missed. Folds made while the app is open are already counted automatically.")
                     .font(FPFont.caption).foregroundStyle(FPColor.text2)
-                Spacer(minLength: 0)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding()
+            }
             .background(FPColor.background)
             .navigationTitle("Record")
             .navigationBarTitleDisplayMode(.inline)

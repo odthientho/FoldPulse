@@ -59,6 +59,10 @@ Build results come from CI (GitHub Actions); run numbers link to https://github.
 | #13 | `7249679` | Failed (UI) | All 86 unit/core tests and both functional UI tests pass. The new `ScreenshotTests` found a **real UI bug**: the milestone sheet presented over the Settings tab and covered the tab bar |
 | #14 | `80e99c3` | **Green** | Milestone sheet only while Today is visible. **57 core + 29 app + 3 UI = 89 tests, 0 failures** |
 
+## Screenshots and the last UI fix
+
+Run #16 (`c8d0aa8`, green) published real screenshots of the running app to the `ci/screenshots` branch (see the Phase 4 report, Chapter 2). They showed truncated text in the Record sheet at its medium height. The sheet now scrolls and its text wraps; this is verified by the run after `c8d0aa8`.
+
 ## Reviews and fixes
 
 Two independent reviews ran on the complete Phase 4 code (see PHASE4_REVIEWS.md):

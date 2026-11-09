@@ -26,13 +26,15 @@ def screenshots():
     if not files:
         return base.md("_Screenshots were not available for this build._")
     captions = {"01-today": "Today (sample week)", "02-record-sheet": "Record sheet with Undo", "03-history": "History",
-                "04-insights": "Insights · week", "05-settings": "Settings"}
+                "04-insights": "Insights · week", "05-settings": "Settings", "06-milestone": "Milestone celebration (once)"}
     cells = "".join(
         f'<div class="gcell"><img src="file://{f}"><div class="gcap">{html.escape(captions.get(f.stem, f.stem))}</div></div>'
         for f in files)
     return (base.md("Real screenshots from the **running app**, captured by the UI test `ScreenshotTests` in CI. "
                     "Simulator iPhone 17 Pro, iOS 26.5 SDK, debug build with the sample week. They are not mockups. "
-                    "The \"Waiting for the hinge\" card is expected: the simulator has no hinge.")
+                    "The \"Waiting for the hinge\" card is expected: the simulator has no hinge. "
+                    "These screenshots revealed one layout bug, truncated text in the Record sheet at its medium height. "
+                    "It was fixed right after capture: the sheet now scrolls and the text wraps.")
             + f'<div class="gallery c3">{cells}</div>')
 
 

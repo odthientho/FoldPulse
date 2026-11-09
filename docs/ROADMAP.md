@@ -10,7 +10,7 @@ Every phase ends with a PDF report and an explicit Founder approval gate.
 | **1b — Device validation spike** (recommended) | Prove on a real iPhone Duo: foreground fold observed; Shortcuts automation runs while locked without prompt | Spike report appended to the feasibility report | Founder's Mac with Xcode 27.1 + iPhone Duo (R-01) | **Closed early** (Founder decision C-2r; see SPIKE_RESULTS.md) |
 | 2 — Brand, UI/UX & Design | Visual identity, icon, screens, widgets, accessibility | Design system, screen specs, flows, widget design, mockups, `phase-02-design.pdf` | Phase 1 approval; C-2r | **Approved 2026-11-09** |
 | 3 — Architecture & Foundation | Xcode project, data layer, design system in code, tests | Architecture, decisions, DB design, buildable project, `phase-03-architecture.pdf` | Phase 2 approval; **Mac + Xcode 27.1 + iPhone Duo access (R-01)** | **Approved 2026-11-09** |
-| 4 — MVP Development | Implement F1–F15 (lean v1) incrementally | Source, dev log, test results, `phase-04-development.pdf` | Phase 3 approval | **In progress** |
+| 4 — MVP Development | Implement F1–F15 (lean v1) incrementally | Source, dev log, test results, `phase-04-development.pdf` | Phase 3 approval | **Deliverables ready — pending Founder review** (CI green, 89 tests) |
 | 5 — QA & Validation | Functional, data, widget, privacy, performance testing; **re-run spike criteria S-1…S-7 on device** | Test plan/results, bugs, reviews, `phase-05-testing.pdf` | Phase 4 approval | Not started |
 | 6 — Release Preparation | App Store assets, privacy disclosure, final build | Store copy, checklist, disclosure, `phase-06-release.pdf` | Phase 5 approval | Not started |
 
