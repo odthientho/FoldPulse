@@ -16,6 +16,13 @@ final class ScreenshotTests: XCTestCase {
         snap(app, "05-settings")
 
         tab(app, "Today")
+        // The sample week crosses milestones: the one-time celebration appears on Today.
+        let nice = app.buttons["Nice"]
+        if nice.waitForExistence(timeout: 5) {
+            sleep(1)
+            snap(app, "06-milestone")
+            nice.tap()
+        }
         XCTAssertTrue(app.descendants(matching: .any)["heroCounter"].waitForExistence(timeout: 10))
         sleep(1)
         snap(app, "01-today")

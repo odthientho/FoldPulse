@@ -64,6 +64,8 @@ struct TodayView: View {
                     Button("Record", systemImage: "plus") { showingRecord = true }
                 }
             }
+            .onAppear { isOnScreen = true }
+            .onDisappear { isOnScreen = false }
             .sheet(isPresented: $showingRecord) { RecordSheet() }
             .sheet(isPresented: milestoneBinding) {
                 if let milestone = model.pendingMilestone {
@@ -74,9 +76,12 @@ struct TodayView: View {
     }
 
     @State private var showingRecord = false
+    /// Sheets attached here would otherwise present over other tabs: the celebration
+    /// waits until Today is actually on screen (USER_FLOWS F6; found by ScreenshotTests).
+    @State private var isOnScreen = false
 
     private var milestoneBinding: Binding<Bool> {
-        Binding(get: { model.pendingMilestone != nil && !showingRecord },
+        Binding(get: { model.pendingMilestone != nil && !showingRecord && isOnScreen },
                 set: { if !$0 { model.dismissMilestone() } })
     }
 
