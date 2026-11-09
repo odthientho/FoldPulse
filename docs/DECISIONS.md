@@ -16,6 +16,12 @@ Product and technical decisions, newest first. Only the Founder makes product de
 | D-4 | 2026-11-09 | **Manual-only mode with a notice** on non-hinge iPhones and iPads | Founder (default) | Addresses App Review 2.4.1 |
 | D-6 | 2026-11-09 | **Lean v1** (MVP_SCOPE §4.1) | Founder (default) | Medium/Large/inline widgets, heat strip, session stats, inferred toggle and JSON import (pending backup check) move to v1.1 |
 | I-17 | 2026-11-09 | **Move FoldPulse to its own GitHub repository** | Founder (default) | Done: `odthientho/FoldPulse` (`main`). Repo is currently **public**; the Founder decides on visibility |
+| T-4 | 2026-11-09 | **XcodeGen** (`project.yml`) generates the Xcode project; `.xcodeproj` is not committed | Architect (Phase 3) | Reproducible project from text; easy review; no merge conflicts in pbxproj |
+| T-5 | 2026-11-09 | **FoldPulseCore** Swift package holds all domain logic (pure Swift) | Architect (Phase 3) | Deterministic, testable on Linux CI; app/widget share one implementation |
+| T-6 | 2026-11-09 | **SwiftData confirmed** over Core Data (DATABASE_DESIGN §1) | Architect (Phase 3) | `@ModelActor` single writer, versioned schema; Core Data remains fallback |
+| T-7 | 2026-11-09 | **Swift 6, complete strict concurrency** in all targets | Architect (Phase 3) | Data-race safety for background intents + widget + UI |
+| T-8 | 2026-11-09 | **GitHub Actions CI** (Linux core tests + macOS simulator build/tests); public repo → no cost | Architect (Phase 3) | The cloud workspace cannot run Xcode; CI provides independent build verification |
+| T-9 | 2026-11-09 | Bundle IDs `io.github.odthientho.foldpulse[.widgets]`, App Group `group.io.github.odthientho.foldpulse` | Architect (Phase 3) | Unique, owner-based; changeable before first App Store submission |
 | T-1 | 2026-11-09 | Event log is the source of truth; aggregates are computed/cached | Architect (Phase 1) | See TECHNICAL_FEASIBILITY §6–§7 |
 | T-2 | 2026-11-09 | SwiftData in the App Group, single writer in the app process; widget writes via a queue file | Architect (Phase 1) | Confirmed or replaced in Phase 3 |
 | T-3 | 2026-11-09 | No networking code, no third-party SDKs | Privacy (Phase 1) | PRIVACY_REVIEW P-1 |

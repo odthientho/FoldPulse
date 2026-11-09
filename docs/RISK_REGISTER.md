@@ -35,6 +35,7 @@ Severity: Critical · High · Medium · Low. Likelihood: H / M / L.
 | R-26 | **Paid up front vs. free/cheap competitors**: lower conversion from browse to install; reviewers expect more polish for a paid app | Medium | H | Founder Rep / PM | Clear App Store screenshots of the differentiators (coverage, widgets); consider a launch price; revisit in Phase 6 | Open (accepted with D-5) |
 | R-27 | App Review or users read the pulse motif + name as a **health app** (1.4.1 / 5.1.3) | Medium | L | Compliance | Utilities category; no health keywords; copy says "counts folds", never health | Designed – unverified |
 | R-28 | **Paid app with an unverified core feature.** If background counting doesn't work for most users, a "since install" count covers only folds made with the app open → refunds and poor reviews (Founder Rep, Phase 2) | High | M | Founder Rep / PM | Foreground-only state designed honestly ("Folds counted since install"); **recommend running S-2/S-3 on iOS 27.2 before setting a price**; claims limited per SPIKE_RESULTS | Open — Founder decision |
+| R-29 | Free Apple ID (personal team) may not allow the **App Group** capability on device; signing fails | Medium | M | Architect | Join the Apple Developer Program (also needed for release) or temporarily drop the App Group | Open |
 | R-16 | Scope creep (Watch, sync, social) | Low | M | PM | MVP_SCOPE out-of-scope list; change-control via Founder | Controlled |
 
 ## 2. Issue log (Phase 1 agent reviews)
