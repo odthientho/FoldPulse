@@ -71,7 +71,7 @@ General rules:
 | Presentation | Sheet with `.presentationDetents([.medium, .large])`, a **Close** button (`cancellationAction`) and title "Record" |
 | Live status | "Hinge right now: Fully open / Partially open / Closed" (from `onHingeChange`) |
 | Actions | **Record Fold** (primary, 56 pt), **Record Unfold** (secondary) |
-| Feedback | Toast "Fold recorded · Manual" with **Undo** (5 s; persistent while assistive technologies run, see DESIGN_SYSTEM §8) + `.increase` haptic + VoiceOver announcement |
+| Feedback | Toast "Fold recorded · Manual" with **Undo**, kept until the sheet closes or the next record (DESIGN_SYSTEM §8) + `.increase` haptic + VoiceOver announcement |
 | Guidance | "Use manual recording only for folds FoldPulse missed. Automatic counts already include folds made while the app is open." This prevents double counting when the phone is folded with the sheet open, which is also handled by de-duplication |
 | Acceptance | US-03 AC1–AC2 |
 

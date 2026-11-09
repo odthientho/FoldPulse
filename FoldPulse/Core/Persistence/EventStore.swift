@@ -71,6 +71,7 @@ actor EventStore {
         let row = try find(id)
         row.deletedAt = now
         row.updatedAt = now
+        row.note = nil // a deleted event keeps no personal text (Phase 4 privacy review)
         try modelContext.save()
     }
 
@@ -104,7 +105,8 @@ actor EventStore {
     }
 
     /// Re-runs de-duplication and gap detection for events from 7 days before the
-    /// earliest of `times` onwards (the Reconciler is idempotent).
+    /// earliest of `times` onwards (the Reconciler is idempotent). Pairs and gaps whose
+    /// context lies before the slice are protected (Phase 4 review D1).
     func reconcile(around times: [Date], now: Date) throws {
         guard let earliest = times.min() else { return }
         let from = earliest.addingTimeInterval(-7 * 86_400)
@@ -113,7 +115,7 @@ actor EventStore {
             sortBy: [SortDescriptor(\.timestamp)])
         let rows = try modelContext.fetch(descriptor)
         var zones: [String: TimeZone] = [:]
-        let plan = Reconciler.plan(for: rows.compactMap { $0.domainEvent(zones: &zones) }, now: now)
+        let plan = Reconciler.plan(for: rows.compactMap { $0.domainEvent(zones: &zones) }, now: now, protectBefore: from)
         guard !plan.isEmpty else { return }
         let byID = Dictionary(rows.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         for (id, original) in plan.markDuplicate {
@@ -140,7 +142,10 @@ actor EventStore {
     }
 
     /// History: live events newest first, optionally since a date and limited to sources.
-    func history(since: Date?, sources: Set<DetectionSource>?, limit: Int = 2_000) throws -> [FoldEvent] {
+    /// History shows at most this many events per query; the screen says so when reached.
+    static let historyLimit = 10_000
+
+    func history(since: Date?, sources: Set<DetectionSource>?, limit: Int = EventStore.historyLimit) throws -> [FoldEvent] {
         var descriptor = FetchDescriptor<StoredEvent>(sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
         if let since {
             descriptor.predicate = #Predicate { $0.deletedAt == nil && $0.duplicateOf == nil && $0.timestamp >= since }
@@ -164,9 +169,10 @@ actor EventStore {
         return try row(id)?.domainEvent(zones: &zones)
     }
 
-    /// Every event including tombstones (full-fidelity JSON export).
+    /// Events for export: everything that isn't deleted (v1; tombstones would only
+    /// matter for the deferred import, and deleted events must not leave the device).
     func exportEvents() throws -> [FoldEvent] {
-        try allEvents(includeDeleted: true)
+        try allEvents()
     }
 
     /// Erases everything (Settings → Reset all data).

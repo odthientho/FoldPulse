@@ -10,12 +10,12 @@ final class HingeTrackerTests: XCTestCase {
         var received: [HingeEdge] = []
         tracker.onEdge = { received.append($0) }
 
-        tracker.observe(.open, label: "Fully open")      // baseline
+        tracker.receive(.fullyOpen)      // baseline
         clock += 1; tracker.tick()
-        tracker.observe(.closed, label: "Closed")
+        tracker.receive(.closed)
         let closedAt = clock
         clock += 0.3; tracker.tick()                     // fold committed
-        tracker.observe(.open, label: "Partially open")
+        tracker.receive(.partiallyOpen)
         let openedAt = clock
         clock += 0.3; tracker.tick()                     // unfold committed
         await tracker.waitForDelivery()
@@ -29,8 +29,8 @@ final class HingeTrackerTests: XCTestCase {
         let tracker = HingeTracker(now: { clock })
         var received: [HingeEdge] = []
         tracker.onEdge = { received.append($0) }
-        tracker.observe(.open, label: "Fully open"); clock += 1; tracker.tick()
-        tracker.observe(.closed, label: "Closed")
+        tracker.receive(.fullyOpen); clock += 1; tracker.tick()
+        tracker.receive(.closed)
         tracker.flush()
         await tracker.waitForDelivery()
         XCTAssertEqual(received.map(\.type), [.fold])
@@ -40,9 +40,37 @@ final class HingeTrackerTests: XCTestCase {
         let tracker = HingeTracker()
         var seen = 0
         tracker.onHingeSeen = { seen += 1 }
-        tracker.observe(nil, label: "No hinge reading")
+        tracker.receive(.unavailable)
         XCTAssertEqual(seen, 0)
-        tracker.observe(.open, label: "Fully open")
+        tracker.receive(.fullyOpen)
         XCTAssertEqual(seen, 1)
+    }
+
+    func testUnknownNeverChangesTheBaseline() async {
+        // Review E2: open → unknown → closed must still be a fold.
+        var clock = Date(timeIntervalSince1970: 1_794_200_000)
+        let tracker = HingeTracker(now: { clock })
+        var received: [HingeEdge] = []
+        tracker.onEdge = { received.append($0) }
+        tracker.receive(.fullyOpen); clock += 1; tracker.tick()
+        tracker.receive(.unknown)
+        XCTAssertEqual(tracker.liveLabel, "Unknown")
+        tracker.receive(.closed); clock += 0.3; tracker.tick()
+        await tracker.waitForDelivery()
+        XCTAssertEqual(received.map(\.type), [.fold])
+    }
+
+    func testReturningToTheAppNeverCreatesAPhantomFold() async {
+        // Review E1: app left while open; phone closed meanwhile; app opened on the outer display.
+        var clock = Date(timeIntervalSince1970: 1_794_200_000)
+        let tracker = HingeTracker(now: { clock })
+        var received: [HingeEdge] = []
+        tracker.onEdge = { received.append($0) }
+        tracker.receive(.fullyOpen); clock += 1; tracker.tick()   // baseline: open
+        tracker.resetBaseline()                                   // scene became active again later
+        clock += 4 * 3600
+        tracker.receive(.closed); clock += 1; tracker.tick()      // first reading: a baseline only
+        await tracker.waitForDelivery()
+        XCTAssertTrue(received.isEmpty)
     }
 }

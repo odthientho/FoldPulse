@@ -50,7 +50,15 @@ final class AppServices {
 
     /// Records an event from any source: stores it, reconciles duplicates and gaps,
     /// refreshes the widget snapshot and claims milestones.
+    struct StoreUnavailableError: Error, CustomStringConvertible {
+        let reason: String
+        var description: String { "FoldPulse couldn't open its data: \(reason)" }
+    }
+
     func record(_ type: EventType, source: DetectionSource, at time: Date, appIsActive: Bool) async throws -> RecordOutcome {
+        // Never record into the temporary fallback store: a Shortcut must fail
+        // visibly rather than report success for a fold that will be lost.
+        if let startupError { throw StoreUnavailableError(reason: startupError) }
         let event = FoldEvent(type: type, source: source, timestamp: time, timeZone: .current)
         let state = try await store.record(event, now: .now, timeZone: .current)
         try snapshots.publish(state.dashboard.snapshot, appIsActive: appIsActive)

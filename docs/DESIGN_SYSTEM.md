@@ -130,7 +130,7 @@ The app uses **SF Symbols** only, so they inherit weight and Dynamic Type. Propo
 | Moment | Motion | Haptic | Reduce Motion |
 |---|---|---|---|
 | Automatic fold recorded (app open) | Hero numeral `.numericText()` roll + one pulse-line beat (600 ms) | **None**: avoids noise across ~100 folds a day | Crossfade only |
-| Manual record | Same + button ripple; Undo toast. **Undo stays until dismissed when VoiceOver, Switch Control or Voice Control is running** (no timing barrier, WCAG 2.2.1), and an announcement is posted. Undo is also always possible from History | `.sensoryFeedback(.increase)` | Crossfade, haptic kept |
+| Manual record | Same + button ripple; Undo toast. **Undo stays until the sheet closes or the next record, for everyone** (no timing barrier, WCAG 2.2.1; Voice Control can't be detected, Phase 4 review), plus a VoiceOver announcement. Undo is also always possible from History | `.sensoryFeedback(.increase)` | Crossfade, haptic kept |
 | Milestone reached | Sheet with the pulse line drawing itself (1.2 s), once | `.success` | Static illustration |
 | Delete event | System list animation | `.impact(weight: .light)` | System default |
 

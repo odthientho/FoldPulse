@@ -6,6 +6,7 @@ struct HeroCounter: View {
     let value: Int
     /// Upper bound for the scaled numeral so 6 digits fit the 5.4" display at AX sizes.
     @ScaledMetric(relativeTo: .largeTitle) private var size: CGFloat = 64
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: FPSpace.xs) {
@@ -17,8 +18,8 @@ struct HeroCounter: View {
                 .foregroundStyle(FPColor.text)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
-                .contentTransition(.numericText(value: Double(value)))
-                .animation(.snappy, value: value)
+                .contentTransition(reduceMotion ? .opacity : .numericText(value: Double(value)))
+                .animation(reduceMotion ? nil : .snappy, value: value)
             PulseLine()
                 .stroke(FPColor.accent, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
                 .frame(width: 120, height: 24)

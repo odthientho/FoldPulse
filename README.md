@@ -2,7 +2,7 @@
 
 A privacy-first iPhone Duo app that counts, records and analyses folds and unfolds. All data stays on the device.
 
-**Current status:** Phases 1–2 approved. Phase 3 (Architecture & Foundation) is ready for Founder review: a buildable Xcode project (generated from `project.yml`), with 43 automated tests passing in CI.
+**Current status:** Phases 1–3 approved. Phase 4 (MVP development) is in progress: counting engine, automatic/background/manual recording, History, Insights, Coverage, background-counting setup, Settings, export and reset are implemented and tested in CI.
 
 **Build it on a Mac:** `curl -fsSL https://raw.githubusercontent.com/odthientho/FoldPulse/main/scripts/setup_mac.sh | bash`
 

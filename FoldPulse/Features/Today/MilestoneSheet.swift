@@ -15,7 +15,8 @@ struct MilestoneSheet: View {
                 .frame(width: 220, height: 44)
                 .accessibilityHidden(true)
             Text(milestone, format: .number)
-                .font(.system(size: 64, weight: .heavy, design: .rounded))
+                .font(.system(.largeTitle, design: .rounded).weight(.heavy))
+                .dynamicTypeSize(...DynamicTypeSize.accessibility3)
                 .foregroundStyle(FPColor.pulseGradient)
                 .minimumScaleFactor(0.5)
             Text("folds since install").font(.title3.weight(.semibold))
@@ -26,6 +27,7 @@ struct MilestoneSheet: View {
         .padding()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Milestone: \(milestone.formatted()) folds since install")
+        .sensoryFeedback(.success, trigger: drawn)
         .onAppear { withAnimation(.easeOut(duration: 1.2)) { drawn = 1 } }
         .presentationDetents([.medium])
     }

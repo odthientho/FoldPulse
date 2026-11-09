@@ -24,7 +24,7 @@ struct InsightsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(periodTitle(summary)).font(FPFont.label).foregroundStyle(FPColor.text2)
                             HStack(alignment: .firstTextBaseline) {
-                                Text(summary.total, format: .number).font(.system(size: 40, weight: .bold, design: .rounded))
+                                Text(summary.total, format: .number).font(.system(.largeTitle, design: .rounded).weight(.bold))
                                 Text(summary.total == 1 ? "fold" : "folds").font(.headline).foregroundStyle(FPColor.text2)
                             }
                             if let previous = summary.previousTotal {

@@ -1,6 +1,26 @@
 import Foundation
 import Observation
+import UIKit
 import FoldPulseCore
+
+/// A hinge reading, independent of the iOS 27.1 types so the mapping is testable in CI.
+enum HingeReading: Equatable, Sendable {
+    case closed, partiallyOpen, fullyOpen
+    /// The system reported a status FoldPulse doesn't recognise.
+    case unknown
+    /// No hinge in this view hierarchy right now (e.g. the scene left the screen).
+    case unavailable
+
+    var label: String {
+        switch self {
+        case .closed: return "Closed"
+        case .partiallyOpen: return "Partially open"
+        case .fullyOpen: return "Fully open"
+        case .unknown: return "Unknown"
+        case .unavailable: return "No hinge reading"
+        }
+    }
+}
 
 /// Automatic counting while FoldPulse is on screen (F1).
 ///
@@ -27,13 +47,31 @@ final class HingeTracker {
         self.now = now
     }
 
-    /// Feeds one reading. `state` nil = no hinge in this hierarchy right now.
-    func observe(_ state: CoarseHingeState?, label: String) {
+    /// Feeds one reading (TECHNICAL_FEASIBILITY §6):
+    /// - closed / partially open / fully open → the detector (partial and full are both "open");
+    /// - unknown → label only: it must never change the baseline (Phase 4 review E2);
+    /// - unavailable → resets the baseline: the next reading is a new baseline.
+    func receive(_ reading: HingeReading) {
+        liveLabel = reading.label
+        let state: CoarseHingeState?
+        switch reading {
+        case .closed: state = .closed
+        case .partiallyOpen, .fullyOpen: state = .open
+        case .unknown: return
+        case .unavailable: state = nil
+        }
         liveState = state
-        liveLabel = label
         if state != nil { onHingeSeen?() }
         deliver(detector.observe(state, at: now()))
         scheduleTick()
+    }
+
+    /// Forgets the baseline (the app returned to the foreground, Phase 4 review E1):
+    /// the first reading afterwards only sets a new baseline, so a fold made while the
+    /// app was away (counted by the Shortcut, or missed) never becomes a phantom hinge fold.
+    func resetBaseline() {
+        tickTask?.cancel()
+        detector.resetBaseline()
     }
 
     /// Commits a stable pending state (called by the debounce timer, or tests).
@@ -63,13 +101,17 @@ final class HingeTracker {
         }
     }
 
-    /// Delivers edges strictly in order, one after another.
+    /// Delivers edges strictly in order, one after another. Each delivery asks iOS
+    /// for background time, because a fold flushed as the phone closes is saved
+    /// while the app is going to the background (Phase 4 review E4).
     private func deliver(_ edges: [HingeEdge]) {
         guard !edges.isEmpty, let onEdge else { return }
         let previous = delivery
+        let backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "FoldPulse.saveFold")
         delivery = Task {
             await previous?.value
             for edge in edges { await onEdge(edge) }
+            if backgroundTask != .invalid { UIApplication.shared.endBackgroundTask(backgroundTask) }
         }
     }
 }

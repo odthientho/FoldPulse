@@ -57,12 +57,20 @@ struct HistoryView: View {
                         ForEach(group.events) { event in
                             NavigationLink(value: event) { EventRow(event: event) }
                                 .swipeActions(edge: .trailing) {
-                                    Button("Delete", role: .destructive) { requestDelete(event) }
+                                    // Gaps are derived, not recorded: deleting one would just bring it back.
+                                    if event.source != .inferred {
+                                        Button("Delete", role: .destructive) { requestDelete(event) }
+                                    }
                                 }
                         }
                     } header: {
                         Text(header(for: group.day, folds: group.events.filter { $0.type == .fold && $0.source != .inferred }.count))
                     }
+                }
+                if events.count >= EventStore.historyLimit {
+                    Text("Showing the most recent \(EventStore.historyLimit.formatted()) events. Choose a shorter range, or export your data to see everything.")
+                        .font(.footnote).foregroundStyle(FPColor.text2)
+                        .listRowBackground(Color.clear)
                 }
                 if filter == .all || filter == .gaps, events.contains(where: { $0.source == .inferred }) {
                     Text("A gap marks an event FoldPulse knows was missed (two folds in a row mean an unfold was missed). Gaps are not counted in totals.")
@@ -142,13 +150,16 @@ struct HistoryView: View {
 
 struct EventRow: View {
     let event: FoldEvent
+    @ScaledMetric(relativeTo: .subheadline) private var timeWidth: CGFloat = 56
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack {
             Text(event.source == .inferred ? "—" : event.timestamp.formatted(.dateTime.hour().minute()))
                 .font(.subheadline.monospacedDigit())
                 .foregroundStyle(FPColor.text2)
-                .frame(width: 56, alignment: .leading)
+                .frame(minWidth: dynamicTypeSize.isAccessibilitySize ? nil : timeWidth, alignment: .leading)
+                .fixedSize()
             Text(title).font(.body.weight(.medium))
             if event.note != nil || event.isEdited {
                 Image(systemName: "pencil").font(.caption).foregroundStyle(FPColor.text2)

@@ -12,7 +12,10 @@ struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: FPSpace.m) {
-                    HeroCounter(label: "Folds since install", value: stats.snapshot.totalSinceInstall)
+                    // Without verified background counting the total covers folds made with the
+                    // app open only — say so (SCREEN_SPECIFICATIONS §2, Phase 2 review).
+                    HeroCounter(label: model.backgroundCountingVerified ? "Folds since install" : "Folds counted since install",
+                                value: stats.snapshot.totalSinceInstall)
                     MilestoneBar(total: stats.snapshot.totalSinceInstall)
                     if !model.hasSeenHinge {
                         manualOnlyCard
@@ -25,13 +28,27 @@ struct TodayView: View {
                                      caption: "\(stats.snapshot.todayUnfolds) unfolds")
                             StatTile(label: "Daily average", value: stats.snapshot.dailyAverage7d, caption: "last 7 full days")
                         }
-                        NavigationLink { CoverageView() } label: { CoverageTile(coverage: stats.coverage) }
-                            .buttonStyle(.plain)
+                        if model.hasSeenHinge {
+                            if model.backgroundCountingVerified {
+                                NavigationLink { CoverageView() } label: { CoverageTile(coverage: stats.coverage) }
+                                    .buttonStyle(.plain)
+                            } else {
+                                foregroundOnlyCard
+                            }
+                        }
                         VStack(alignment: .leading) {
                             Text("Last 7 days").font(.headline)
                             WeekChart(series: stats.lastSevenDays)
                         }
                         .fpCard()
+                        if let last = model.lastEvent {
+                            HStack(spacing: 6) {
+                                Text("Last: \(last.type == .fold ? "Fold" : "Unfold") · \(last.timestamp, format: .relative(presentation: .named))")
+                                    .font(FPFont.caption).foregroundStyle(FPColor.text2)
+                                SourceBadge(source: last.source)
+                            }
+                            .accessibilityElement(children: .combine)
+                        }
                     }
                     if let error = model.lastError {
                         Text(error).font(.footnote).foregroundStyle(FPColor.destructive)
@@ -61,6 +78,23 @@ struct TodayView: View {
     private var milestoneBinding: Binding<Bool> {
         Binding(get: { model.pendingMilestone != nil && !showingRecord },
                 set: { if !$0 { model.dismissMilestone() } })
+    }
+
+    /// Background counting not set up (the likely default): explain what's missed.
+    private var foregroundOnlyCard: some View {
+        NavigationLink { SetupView() } label: {
+            HStack(alignment: .top, spacing: FPSpace.m) {
+                Image(systemName: "exclamationmark.triangle").foregroundStyle(FPColor.warning)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Counting only while FoldPulse is open").font(.headline).foregroundStyle(FPColor.text)
+                    Text("Folds made with the app closed aren't counted yet. Add the optional Shortcuts automation to count them too.")
+                        .font(.subheadline).foregroundStyle(FPColor.text2)
+                    Text("Set up background counting").font(.subheadline.weight(.semibold)).foregroundStyle(FPColor.accentText)
+                }
+            }
+            .fpCard()
+        }
+        .buttonStyle(.plain)
     }
 
     /// Shown until a hinge reading has ever been received (non-Duo devices, D-4).

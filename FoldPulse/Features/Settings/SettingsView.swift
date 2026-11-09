@@ -12,8 +12,11 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section("Counting") {
-                    NavigationLink { SetupView() } label: { BackgroundStatusRow() }
-                    NavigationLink("Coverage") { CoverageView() }
+                    // Manual-only devices (no hinge) have nothing to set up (SCREEN_SPECIFICATIONS §12).
+                    if model.hasSeenHinge {
+                        NavigationLink { SetupView() } label: { BackgroundStatusRow() }
+                        NavigationLink("Coverage") { CoverageView() }
+                    }
                     Toggle("Milestone notifications", isOn: $notifications)
                         .onChange(of: notifications) { _, enabled in
                             guard enabled else { return }
@@ -84,22 +87,28 @@ struct ExportSheet: View {
                     Image(systemName: "lock")
                 }
                 .font(.subheadline)
+                // The file is written only when asked for, and deleted when this sheet closes.
                 if let file {
                     ShareLink(item: file) { Label("Share \(file.lastPathComponent)", systemImage: "square.and.arrow.up") }
                 } else {
-                    ProgressView()
+                    Button("Create export file") {
+                        Task {
+                            do { file = try await model.makeExportFile(format) } catch { self.error = String(describing: error) }
+                        }
+                    }
                 }
                 if let error { Text(error).foregroundStyle(FPColor.destructive) }
             }
             .navigationTitle("Export data")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
-            .task(id: format) {
+            .onChange(of: format) { _, _ in
                 file = nil
-                do { file = try await model.makeExportFile(format) } catch { self.error = String(describing: error) }
+                AppModel.removeExports()
             }
         }
         .presentationDetents([.medium])
+        .onDisappear { AppModel.removeExports() }
     }
 }
 

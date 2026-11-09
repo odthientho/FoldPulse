@@ -38,7 +38,7 @@ jobs:
         run: swift test --package-path Packages/FoldPulseCore
       - name: Privacy guard — no networking code in shipping targets (PRIVACY_REVIEW P-1)
         run: |
-          if grep -rnE --include="*.swift" "URLSession|import Network|NWConnection|WKWebView|import WebKit|import CloudKit|CKContainer|https?://" \
+          if grep -rnE --include="*.swift" "URLSession|URLRequest|NSURLConnection|CFNetwork|SCNetwork|import Network|NWConnection|WKWebView|import WebKit|import CloudKit|CKContainer|https?://" \
                FoldPulse Shared FoldPulseWidgets Packages/FoldPulseCore/Sources; then
             echo "::error::Networking symbols found in shipping code"; exit 1
           fi

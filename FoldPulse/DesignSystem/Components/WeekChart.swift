@@ -11,6 +11,8 @@ struct WeekChart: View {
             BarMark(x: .value("Day", item.day.description), y: .value("Folds", item.count))
                 .foregroundStyle(index == series.count - 1 ? FPColor.accent : FPColor.accent.opacity(0.45))
                 .cornerRadius(4)
+                .accessibilityLabel(item.day.start(in: .current).formatted(.dateTime.weekday(.wide).month().day()))
+                .accessibilityValue("\(item.count) \(item.count == 1 ? "fold" : "folds")")
         }
         .chartXAxis {
             AxisMarks { value in

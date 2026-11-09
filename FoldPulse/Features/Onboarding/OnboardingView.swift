@@ -4,6 +4,7 @@ import SwiftUI
 struct OnboardingView: View {
     let onFinish: () -> Void
     @State private var page = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack {
@@ -21,7 +22,7 @@ struct OnboardingView: View {
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
             Button(page < 2 ? "Continue" : "Start counting") {
-                if page < 2 { withAnimation { page += 1 } } else { onFinish() }
+                if page < 2 { withAnimation(reduceMotion ? nil : .default) { page += 1 } } else { onFinish() }
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.extraLarge)

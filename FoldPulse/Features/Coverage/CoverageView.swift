@@ -12,7 +12,7 @@ struct CoverageView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Counted for you · this week").font(FPFont.label).foregroundStyle(FPColor.text2)
                     if let share = coverage.countedForYouShare {
-                        Text(share, format: .percent.precision(.fractionLength(0))).font(.system(size: 44, weight: .bold, design: .rounded))
+                        Text(share, format: .percent.precision(.fractionLength(0))).font(.system(.largeTitle, design: .rounded).weight(.bold))
                         Text("of \(coverage.recordedFolds.formatted()) recorded folds").font(FPFont.caption).foregroundStyle(FPColor.text2)
                     } else {
                         Text("No folds recorded this week yet").font(.headline)
@@ -60,13 +60,18 @@ struct BackgroundStatusRow: View {
     }
 
     private var status: String {
-        let lastRun = [model.settings.lastShortcutFold, model.settings.lastShortcutUnfold].compactMap { $0 }.max()
+        let lastRun = model.lastAutomationRun
         switch model.selfTestState {
         case .passed(let date):
+            if let lastRun, Date.now.timeIntervalSince(lastRun) > 24 * 3600 {
+                return "No automation run in 24 h — check the automations"
+            }
             if let lastRun { return "Working · last run \(lastRun.formatted(.relative(presentation: .named)))" }
             return "Self-test passed \(date.formatted(date: .abbreviated, time: .omitted))"
         case .waiting:
             return "Self-test in progress"
+        case .failed:
+            return "Self-test failed — tap for details"
         case .notRun:
             return lastRun == nil ? "Not set up — optional" : "Runs seen · self-test not run"
         }

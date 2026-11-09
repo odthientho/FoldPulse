@@ -49,13 +49,51 @@ final class ReconcilerTests: XCTestCase {
         XCTAssertEqual(gap.inferredIntervalEnd, second.timestamp)
     }
 
-    func testOppositeEventInBetweenPreventsMerging() {
-        let fold1 = e(.fold, .hinge, "2026-11-09T10:00:00Z")
-        let unfold = e(.unfold, .hinge, "2026-11-09T10:00:03Z")
+    func testQuickCloseOpenCloseSeenOnlyByShortcutsIsThreeRealEvents() {
+        let fold1 = e(.fold, .shortcut, "2026-11-09T10:00:00Z")
+        let unfold = e(.unfold, .shortcut, "2026-11-09T10:00:03Z")
         let fold2 = e(.fold, .shortcut, "2026-11-09T10:00:06Z")
         let plan = Reconciler.plan(for: [fold1, unfold, fold2], now: now)
-        XCTAssertTrue(plan.markDuplicate.isEmpty, "a quick close-open-close is three real events")
+        XCTAssertTrue(plan.markDuplicate.isEmpty, "Shortcut events never absorb other Shortcut events")
         XCTAssertTrue(plan.addGaps.isEmpty)
+    }
+
+    func testLaggingShortcutsInterleavedWithHingeAreNotDoubleCounted() {
+        // Review D2: quick close-and-reopen while the app is open; the automations lag.
+        let hingeUnfold = e(.unfold, .hinge, "2026-11-09T10:00:00Z")
+        let hingeFold = e(.fold, .hinge, "2026-11-09T10:00:03Z")
+        let shortcutUnfold = e(.unfold, .shortcut, "2026-11-09T10:00:05Z")
+        let shortcutFold = e(.fold, .shortcut, "2026-11-09T10:00:07Z")
+        let plan = Reconciler.plan(for: [hingeUnfold, hingeFold, shortcutUnfold, shortcutFold], now: now)
+        XCTAssertEqual(plan.markDuplicate, [shortcutUnfold.id: hingeUnfold.id, shortcutFold.id: hingeFold.id])
+        XCTAssertTrue(plan.addGaps.isEmpty)
+    }
+
+    func testDoubleTapNextToAHingeEventIsOneFold() {
+        // Review D3: manual 0.0 s, hinge 0.2 s, manual 0.5 s (double tap) → one fold.
+        let first = e(.fold, .manual, "2026-11-09T10:00:00Z")
+        let hinge = FoldEvent(type: .fold, source: .hinge, timestamp: first.timestamp.addingTimeInterval(0.2), timeZone: Fixture.london)
+        let second = FoldEvent(type: .fold, source: .manual, timestamp: first.timestamp.addingTimeInterval(0.5), timeZone: Fixture.london)
+        let plan = Reconciler.plan(for: [first, hinge, second], now: now)
+        XCTAssertEqual(plan.markDuplicate, [first.id: hinge.id, second.id: hinge.id])
+        XCTAssertTrue(plan.addGaps.isEmpty)
+    }
+
+    func testWindowProtectionKeepsPairsAndGapsThatStartBeforeTheSlice() {
+        // Review D1: reconciling a slice must not undo work whose context lies before it.
+        let gapStart = e(.fold, .hinge, "2026-11-01T10:00:00Z")
+        let gapEnd = e(.fold, .hinge, "2026-11-02T10:00:00Z")
+        let full = Reconciler.plan(for: [gapStart, gapEnd], now: now)
+        let gap = try! XCTUnwrap(full.addGaps.first)
+        let sliceStart = Fixture.date("2026-11-01T12:00:00Z") // gapStart is outside the slice
+        let plan = Reconciler.plan(for: [gapEnd, gap], now: now, protectBefore: sliceStart)
+        XCTAssertTrue(plan.removeGaps.isEmpty, "a gap whose earlier end is before the slice is kept")
+
+        let hinge = e(.fold, .hinge, "2026-11-09T09:59:58Z")
+        var shortcut = e(.fold, .shortcut, "2026-11-09T10:00:03Z")
+        shortcut.duplicateOf = hinge.id
+        let slice = Reconciler.plan(for: [shortcut], now: now, protectBefore: Fixture.date("2026-11-09T10:00:00Z"))
+        XCTAssertTrue(slice.clearDuplicate.isEmpty, "its partner may lie just before the slice")
     }
 
     func testManualTapRightAfterAutomaticFoldIsNotDoubleCounted() {

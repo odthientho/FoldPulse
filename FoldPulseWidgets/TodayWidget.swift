@@ -82,7 +82,7 @@ struct TodayWidgetView: View {
                 .minimumScaleFactor(0.6)
                 .widgetAccentable()
                 .privacySensitive()
-            Text("folds").font(.caption).foregroundStyle(FPColor.text2)
+            Text(display.totalSinceInstall == 0 ? "Start folding" : "folds").font(.caption).foregroundStyle(FPColor.text2)
             Spacer(minLength: 0)
             Text("\(display.totalSinceInstall.formatted()) since install")
                 .font(.caption2.weight(.semibold))
@@ -105,6 +105,7 @@ struct TodayWidgetView: View {
             Text(todayText).privacySensitive()
         }
         .gaugeStyle(.accessoryCircularCapacity)
+        .privacySensitive() // the gauge's fill reveals the count too (WIDGET_DESIGN §4)
         .accessibilityLabel("\(todayText) folds today, daily average \(entry.snapshot.dailyAverage7d.map(String.init) ?? "not available yet")")
     }
 

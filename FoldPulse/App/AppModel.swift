@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UserNotifications
 import FoldPulseCore
 
 /// App-wide UI state: dashboard numbers, recent events, the hinge tracker and
@@ -12,6 +13,8 @@ final class AppModel {
     private(set) var lastError: String?
     /// The most recent manual event, for Undo.
     private(set) var lastManualEvent: FoldEvent?
+    /// The most recent counted event (Today's "Last:" row).
+    var lastEvent: FoldEvent? { recentEvents.first { $0.source != .inferred } }
     /// A milestone to celebrate once (sheet on Today).
     var pendingMilestone: Int?
     /// True once a hinge reading has ever been received on this device.
@@ -123,33 +126,74 @@ final class AppModel {
         case .json: data = try Exporter.json(events, exportedAt: .now)
         }
         let day = LocalDay(date: .now, timeZone: .current)
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("Export", isDirectory: true)
-        try? FileManager.default.removeItem(at: directory) // never leave older exports behind
+        let directory = Self.exportDirectory
+        Self.removeExports() // never leave older exports behind
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appendingPathComponent("FoldPulse-\(day).\(format.rawValue.lowercased())")
         try data.write(to: url, options: [.atomic, .completeFileProtection])
         return url
     }
 
-    /// Settings → Reset all data: events, snapshot-backed widget and progress settings.
+    static var exportDirectory: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("Export", isDirectory: true)
+    }
+
+    /// Export files are deleted when the export sheet closes, at launch and on reset
+    /// (PRIVACY_REVIEW P-4, Phase 4 privacy review).
+    static func removeExports() {
+        try? FileManager.default.removeItem(at: exportDirectory)
+    }
+
+    /// Settings → Reset all data: events, widget snapshot, progress settings,
+    /// export files and delivered milestone notifications.
     func resetAllData() async {
         do { try await services.store.deleteAll() } catch { lastError = String(describing: error) }
         settings.resetData()
+        Self.removeExports()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
         pendingMilestone = nil
         lastManualEvent = nil
         await reload()
     }
 
-    /// Background-counting self-test (SCREEN_SPECIFICATIONS §8).
+    /// Background-counting self-test (SCREEN_SPECIFICATIONS §8, USER_FLOWS F2).
     enum SelfTestState: Equatable {
-        case notRun, waiting(since: Date), passed(Date)
+        case notRun
+        case waiting(since: Date)
+        case passed(Date)
+        /// The test window passed without both automations running; names the failing step.
+        case failed(reason: String)
     }
 
+    /// Time allowed for both automations to run after the test starts.
+    static let selfTestWindow: TimeInterval = 60
+
     var selfTestState: SelfTestState {
+        _ = selfTestVersion
         if let passed = settings.selfTestPassedAt { return .passed(passed) }
-        if let started = settings.selfTestStartedAt { return .waiting(since: started) }
-        return .notRun
+        guard let started = settings.selfTestStartedAt else { return .notRun }
+        guard Date.now.timeIntervalSince(started) > Self.selfTestWindow else { return .waiting(since: started) }
+        let foldRan = (settings.lastShortcutFold ?? .distantPast) >= started
+        let unfoldRan = (settings.lastShortcutUnfold ?? .distantPast) >= started
+        switch (foldRan, unfoldRan) {
+        case (false, false):
+            return .failed(reason: "Neither automation ran. Check that you're on iOS 27.2 or later, that both automations exist, and that they use FoldPulse's actions.")
+        case (false, true):
+            return .failed(reason: "The “Closed” automation didn't run. Check it uses “Record Fold” and Run Immediately.")
+        case (true, false):
+            return .failed(reason: "The “Opened” automation didn't run. Check it uses “Record Unfold” and Run Immediately.")
+        case (true, true):
+            return .failed(reason: "The automations ran too late. Try again: close, wait a moment, then open.")
+        }
     }
+
+    /// When an automation last recorded anything.
+    var lastAutomationRun: Date? {
+        [settings.lastShortcutFold, settings.lastShortcutUnfold].compactMap { $0 }.max()
+    }
+
+    /// Background counting is considered set up once the self-test has passed.
+    var backgroundCountingVerified: Bool { settings.selfTestPassedAt != nil }
 
     func startSelfTest() {
         settings.selfTestStartedAt = .now
@@ -157,12 +201,16 @@ final class AppModel {
         selfTestVersion += 1
     }
 
-    /// Passes when both automations ran after the test started (within 10 minutes).
-    func checkSelfTest() {
-        guard let started = settings.selfTestStartedAt,
+    /// Passes when both automations ran after the test started, within the window.
+    func checkSelfTest(now: Date = .now) {
+        guard settings.selfTestPassedAt == nil, let started = settings.selfTestStartedAt,
               let fold = settings.lastShortcutFold, let unfold = settings.lastShortcutUnfold,
-              fold >= started, unfold >= started, Date.now.timeIntervalSince(started) < 600 else { return }
-        settings.selfTestPassedAt = .now
+              fold >= started, unfold >= started,
+              max(fold, unfold).timeIntervalSince(started) <= Self.selfTestWindow else {
+            selfTestVersion += 1 // let views re-evaluate waiting → failed
+            return
+        }
+        settings.selfTestPassedAt = now
         selfTestVersion += 1
     }
 

@@ -5,7 +5,8 @@ import FoldPulseCore
 /// Connects SwiftUI's hinge API (iOS 27.1, iPhone Duo) to the HingeTracker.
 /// Compiled only when `HINGE_API` is set (DECISIONS T-10): CI runners don't have
 /// the iOS 27.1 SDK yet. The API form matches FoldProbe, which compiled and ran
-/// on the Founder's iPhone Duo (SPIKE_RESULTS).
+/// on the Founder's iPhone Duo (SPIKE_RESULTS). All logic lives in HingeTracker,
+/// which CI tests; this file only converts the system type to `HingeReading`.
 struct HingeTrackingModifier: ViewModifier {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
@@ -13,25 +14,27 @@ struct HingeTrackingModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onHingeChange { _, newContext in
-                guard let hinge = newContext.hinge else {
-                    model.hinge.observe(nil, label: "No hinge reading")
-                    return
+                // Only the foreground-active scene may count (feasibility §5, review E3).
+                guard scenePhase == .active else { return }
+                model.hinge.receive(Self.reading(newContext.hinge))
+            }
+            .onChange(of: scenePhase) { old, phase in
+                if old == .active {
+                    // Closing the phone may background the app before the debounce elapses.
+                    model.hinge.flush()
                 }
-                let status = hinge.status
-                if status == .closed {
-                    model.hinge.observe(.closed, label: "Closed")
-                } else if status == .partiallyOpen {
-                    model.hinge.observe(.open, label: "Partially open")
-                } else if status == .fullyOpen {
-                    model.hinge.observe(.open, label: "Fully open")
-                } else {
-                    model.hinge.observe(nil, label: "Unknown")
+                if phase == .active || phase == .background {
+                    model.hinge.resetBaseline()
                 }
             }
-            .onChange(of: scenePhase) { _, _ in
-                // Closing the phone may background the app before the debounce elapses.
-                model.hinge.flush()
-            }
+    }
+
+    static func reading(_ hinge: DeviceHinge?) -> HingeReading {
+        guard let hinge else { return .unavailable }
+        if hinge.status == .closed { return .closed }
+        if hinge.status == .partiallyOpen { return .partiallyOpen }
+        if hinge.status == .fullyOpen { return .fullyOpen }
+        return .unknown
     }
 }
 #endif

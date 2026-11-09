@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 import FoldPulseCore
 
 /// Manual recording with Undo (F4, SCREEN_SPECIFICATIONS §3).
@@ -7,7 +6,7 @@ struct RecordSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var recorded: FoldEvent?
-    @State private var hideTask: Task<Void, Never>?
+    @State private var recordCount = 0
 
     var body: some View {
         NavigationStack {
@@ -25,7 +24,7 @@ struct RecordSheet: View {
                 Button { record(.fold) } label: { Text("Record Fold").frame(maxWidth: .infinity) }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.extraLarge)
-                    .sensoryFeedback(.increase, trigger: recorded?.id)
+                    .sensoryFeedback(.increase, trigger: recordCount)
                 Button { record(.unfold) } label: { Text("Record Unfold").frame(maxWidth: .infinity) }
                     .buttonStyle(.bordered)
                     .controlSize(.extraLarge)
@@ -65,16 +64,11 @@ struct RecordSheet: View {
     private func record(_ type: EventType) {
         Task {
             guard let event = await model.record(type, source: .manual) else { return }
+            recordCount += 1
             withAnimation { recorded = event }
+            // Undo stays until the sheet closes or the next record: no timing barrier for
+            // anyone, including Voice Control and Full Keyboard Access users (WCAG 2.2.1).
             AccessibilityNotification.Announcement("\(type == .fold ? "Fold" : "Unfold") recorded. Undo is available.").post()
-            hideTask?.cancel()
-            // No timing barrier for assistive technologies (WCAG 2.2.1): keep Undo visible.
-            guard !UIAccessibility.isVoiceOverRunning, !UIAccessibility.isSwitchControlRunning else { return }
-            hideTask = Task {
-                try? await Task.sleep(for: .seconds(5))
-                guard !Task.isCancelled else { return }
-                withAnimation { recorded = nil }
-            }
         }
     }
 }

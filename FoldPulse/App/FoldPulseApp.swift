@@ -16,7 +16,10 @@ struct FoldPulseApp: App {
                         // Order matters: the hinge modifier reads AppModel from the environment.
                         .hingeTracking()
                         .environment(model)
-                        .task { await model.reload() }
+                        .task {
+                            AppModel.removeExports() // never leave an old export behind
+                            await model.reload()
+                        }
                         // "Today" rolls over at local midnight without waiting for a data change.
                         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
                             Task { await model.reload() }

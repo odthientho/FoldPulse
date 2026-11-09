@@ -20,7 +20,7 @@ Deferred to v1.1: `systemMedium`, `systemLarge`, `accessoryInline`, and the inte
 
 - The widget reads **`WidgetSnapshot.json`** from the App Group (file protection **`completeUntilFirstUserAuthentication`**, so it stays readable on the Lock Screen and writable by background intents while locked): `todayFolds`, `todayUnfolds`, `totalSinceInstall`, `dailyAverage7d`, `nextMilestone`, `localDate`, `generatedAt`. It never opens the database.
 - **Freshness label:** "as of 14:02" whenever `now − generatedAt > 15 min`. Otherwise no label (Small) or "Updated just now" (in the app only).
-- **Midnight rule:** the timeline contains a second entry at the next local midnight. From that moment "Today" shows **0** and the label reads "as of 23:58 yesterday" for the total. No reload is needed (Apple: predictable timeline events).
+- **Midnight rule:** the timeline contains a second entry at the next local midnight. From that moment "Today" shows **"—"** until the app refreshes the snapshot (it can't know about folds recorded after midnight until then), and the total keeps its "as of" label. No reload is needed (Apple: predictable timeline events).
 - **Reload policy (Agent 11):** reload immediately when the app is in the foreground (unbudgeted). From background intents, reload at most once every 5 minutes (coalesced). The budget is roughly 40–70 reloads a day.
 - **Empty state:** "0 · Start folding" before any data. Tapping the widget opens Today.
 
