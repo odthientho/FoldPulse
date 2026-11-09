@@ -18,4 +18,30 @@ final class LaunchTests: XCTestCase {
             XCTAssertTrue(app.navigationBars[tab].waitForExistence(timeout: 5))
         }
     }
+
+    /// F4 end to end: manual recording updates Today and History; Undo is offered.
+    @MainActor
+    func testRecordingAFoldManuallyUpdatesTodayAndHistory() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing"]
+        app.launch()
+
+        let record = app.buttons["Record"].firstMatch
+        XCTAssertTrue(record.waitForExistence(timeout: 10))
+        record.tap()
+        let recordFold = app.buttons["Record Fold"]
+        XCTAssertTrue(recordFold.waitForExistence(timeout: 5))
+        recordFold.tap()
+        XCTAssertTrue(app.staticTexts["Fold recorded · Manual"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Undo"].exists)
+        app.buttons["Close"].firstMatch.tap()
+
+        let hero = app.descendants(matching: .any)["heroCounter"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 5))
+        XCTAssertEqual(hero.label, "1 fold since install")
+
+        app.buttons["History"].firstMatch.tap()
+        let row = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'Fold'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "the recorded fold appears in History")
+    }
 }

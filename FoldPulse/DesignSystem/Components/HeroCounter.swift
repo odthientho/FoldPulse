@@ -25,7 +25,8 @@ struct HeroCounter: View {
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(value.formatted()) \(label.lowercased())")
+        .accessibilityLabel(value == 1 ? "1 fold since install" : "\(value.formatted()) \(label.lowercased())")
+        .accessibilityIdentifier("heroCounter")
     }
 }
 
