@@ -17,6 +17,9 @@ struct ContentView: View {
     @State private var statusText = "waiting…"
     @State private var angleText = "–"
     @State private var callbacks = 0
+    @State private var folds = 0          // raw open→closed changes (no debounce)
+    @State private var unfolds = 0        // raw closed→open changes (no debounce)
+    @State private var lastCoarse: String? = nil   // "closed" / "open"; first reading = baseline only
     @State private var windowSize: CGSize = .zero
     @State private var recent: [String] = []
     @State private var confirmReset = false
@@ -24,10 +27,14 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("Count since START (raw, before filtering)") {
+                    LabeledContent("Folds (closed)", value: "\(folds)")
+                    LabeledContent("Unfolds (opened)", value: "\(unfolds)")
+                }
                 Section("Live hinge (onHingeChange)") {
                     LabeledContent("Status", value: statusText)
                     LabeledContent("Angle", value: angleText)
-                    LabeledContent("Callbacks", value: "\(callbacks)")
+                    LabeledContent("Callbacks (every angle update)", value: "\(callbacks)")
                     LabeledContent("Window", value: "\(Int(windowSize.width)) × \(Int(windowSize.height)) pt")
                 }
                 Section("Test run") {
@@ -72,6 +79,7 @@ struct ContentView: View {
                 let name = Self.name(of: hinge.status)
                 let degrees = hinge.angle.degrees
                 statusText = name
+                countEdge(name)
                 angleText = String(format: "%.1f°", degrees)
                 ProbeLog.shared.append(kind: "hinge", status: name, angleDeg: degrees)
             } else {
@@ -89,7 +97,21 @@ struct ContentView: View {
         }
     }
 
+    /// Counts only changes between closed and open; partiallyOpen↔fullyOpen is ignored.
+    private func countEdge(_ status: String) {
+        let coarse: String
+        switch status {
+        case "closed": coarse = "closed"
+        case "partiallyOpen", "fullyOpen": coarse = "open"
+        default: return
+        }
+        defer { lastCoarse = coarse }
+        guard let previous = lastCoarse, previous != coarse else { return }
+        if coarse == "closed" { folds += 1 } else { unfolds += 1 }
+    }
+
     private func mark(_ edge: String) {
+        if edge == "start" { folds = 0; unfolds = 0 }
         ProbeLog.shared.append(kind: "note", detail: "\(edge) \(condition)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { refresh() }
     }
