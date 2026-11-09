@@ -30,15 +30,22 @@ extension StoredEvent {
 
     /// The domain value, or nil if the row holds unknown enum values
     /// (written by a newer app version) — such rows are skipped, never guessed.
-    var domainEvent: FoldEvent? {
+    /// `zones` caches `TimeZone` lookups across rows; the stored local day is
+    /// reused, so loading does no per-row calendar work (Phase 3 performance review).
+    func domainEvent(zones: inout [String: TimeZone]) -> FoldEvent? {
         guard let type = EventType(rawValue: typeRaw), let source = DetectionSource(rawValue: sourceRaw) else { return nil }
-        let zone = TimeZone(identifier: timeZoneID) ?? TimeZone(identifier: "UTC")!
+        let zone: TimeZone
+        if let cached = zones[timeZoneID] {
+            zone = cached
+        } else {
+            zone = TimeZone(identifier: timeZoneID) ?? TimeZone(identifier: "UTC")!
+            zones[timeZoneID] = zone
+        }
         var event = FoldEvent(id: id, type: type, source: source, timestamp: timestamp, timeZone: zone, note: note,
                               createdAt: createdAt, updatedAt: updatedAt, isEdited: isEdited, deletedAt: deletedAt,
                               duplicateOf: duplicateOf, inferredIntervalStart: inferredIntervalStart,
-                              inferredIntervalEnd: inferredIntervalEnd)
+                              inferredIntervalEnd: inferredIntervalEnd, localDay: LocalDay(string: localDay))
         event.timeZoneID = timeZoneID
-        if let day = LocalDay(string: localDay) { event.localDay = day }
         return event
     }
 }

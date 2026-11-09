@@ -7,14 +7,14 @@ import FoldPulseCore
 /// Lock Screen and writable by background intents while the phone is locked
 /// (PRIVACY_REVIEW P-3), but encrypted until the first unlock after a reboot.
 enum SnapshotFile {
-    static var defaultURL: URL { AppGroup.containerURL.appendingPathComponent(WidgetSnapshot.fileName) }
+    static var defaultURL: URL? { AppGroup.containerURL?.appendingPathComponent(WidgetSnapshot.fileName) }
 
-    static func read(from url: URL = defaultURL) -> WidgetSnapshot? {
-        guard let data = try? Data(contentsOf: url) else { return nil }
+    static func read(from url: URL? = defaultURL) -> WidgetSnapshot? {
+        guard let url, let data = try? Data(contentsOf: url) else { return nil }
         return WidgetSnapshot.decode(data)
     }
 
-    static func write(_ snapshot: WidgetSnapshot, to url: URL = defaultURL) throws {
+    static func write(_ snapshot: WidgetSnapshot, to url: URL) throws {
         let data = try snapshot.encoded()
         try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }

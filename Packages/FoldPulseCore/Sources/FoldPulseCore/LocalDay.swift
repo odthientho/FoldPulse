@@ -22,11 +22,23 @@ public struct LocalDay: Hashable, Comparable, Sendable, CustomStringConvertible 
         self.init(year: parts.year ?? 1970, month: parts.month ?? 1, day: parts.day ?? 1)
     }
 
-    /// Parses `YYYY-MM-DD`.
+    /// Parses `YYYY-MM-DD`, rejecting impossible dates such as 2026-02-31.
+    /// Uses plain arithmetic (no Calendar), because it runs once per stored row.
     public init?(string: String) {
         let parts = string.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3, (1...12).contains(parts[1]), (1...31).contains(parts[2]) else { return nil }
+        guard parts.count == 3, (1...9999).contains(parts[0]), (1...12).contains(parts[1]),
+              (1...LocalDay.daysInMonth(year: parts[0], month: parts[1])).contains(parts[2]) else { return nil }
         self.init(year: parts[0], month: parts[1], day: parts[2])
+    }
+
+    static func daysInMonth(year: Int, month: Int) -> Int {
+        switch month {
+        case 2:
+            let leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+            return leap ? 29 : 28
+        case 4, 6, 9, 11: return 30
+        default: return 31
+        }
     }
 
     public var description: String {

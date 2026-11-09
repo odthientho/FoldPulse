@@ -35,9 +35,24 @@ jobs:
           echo "SDK_VERSION=$(xcrun --sdk iphonesimulator --show-sdk-version)" >> "$GITHUB_ENV"
       - name: Core tests (macOS)
         run: swift test --package-path Packages/FoldPulseCore
+      - name: Privacy guard — no networking code in shipping targets (PRIVACY_REVIEW P-1)
+        run: |
+          if grep -rnE --include="*.swift" "URLSession|import Network|NWConnection|WKWebView|import WebKit|import CloudKit|CKContainer|https?://" \
+               FoldPulse Shared FoldPulseWidgets Packages/FoldPulseCore/Sources; then
+            echo "::error::Networking symbols found in shipping code"; exit 1
+          fi
+          echo "No networking symbols found."
       - name: Generate Xcode project
         run: |
           brew install xcodegen
+          # The app targets iOS 27.1 (iPhone Duo). When the runner's SDK is older, generate the
+          # project with the runner's SDK as deployment target — a compile/test check only.
+          if [ "$(printf '%s\n27.1\n' "$SDK_VERSION" | sort -V | head -1)" != "27.1" ]; then
+            echo "::warning::Runner SDK $SDK_VERSION < 27.1 — deployment target lowered to $SDK_VERSION for CI only."
+            echo "### ⚠️ Compile check on iOS $SDK_VERSION SDK (app targets 27.1)" >> "$GITHUB_STEP_SUMMARY"
+            sed -i '' "s/iOS: \"27.1\"/iOS: \"$SDK_VERSION\"/" project.yml
+            grep -n 'iOS:' project.yml
+          fi
           xcodegen generate
       - name: Pick a simulator
         run: |
@@ -51,25 +66,21 @@ jobs:
                   if dev["name"].startswith("iPhone"):
                       print(dev["udid"]); sys.exit()
           ')
+          [ -n "$UDID" ] || { echo "::error::No iPhone simulator available"; exit 1; }
           echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
           xcrun simctl list devices available | grep -E "Duo|iPhone" | head -20
       - name: Build and test
         run: |
-          # The app targets iOS 27.1 (iPhone Duo). If the runner's SDK is older,
-          # compile against the available SDK as a compile check only.
-          EXTRA=""
-          if [ "$(printf '%s\n27.1\n' "$SDK_VERSION" | sort -V | head -1)" != "27.1" ]; then
-            echo "::warning::Runner SDK $SDK_VERSION < 27.1 — deployment target lowered for a compile check only."
-            EXTRA="IPHONEOS_DEPLOYMENT_TARGET=$SDK_VERSION"
-          fi
           set +e
           xcodebuild test \
             -project FoldPulse.xcodeproj -scheme FoldPulse \
             -destination "id=$SIM_UDID" \
             -resultBundlePath TestResults.xcresult \
-            CODE_SIGNING_ALLOWED=NO $EXTRA > xcodebuild.log 2>&1
+            CODE_SIGNING_ALLOWED=NO > xcodebuild.log 2>&1
           STATUS=$?
           grep -E "error:|warning: |Test Case .*(passed|failed)|Executed|\*\* " xcodebuild.log | tail -400
+          if [ $STATUS -ne 0 ]; then echo "----- last 80 lines -----"; tail -80 xcodebuild.log; fi
+          grep -E "Executed [0-9]+ tests" xcodebuild.log | tail -2 >> "$GITHUB_STEP_SUMMARY" || true
           exit $STATUS
       - name: Upload results
         if: always()

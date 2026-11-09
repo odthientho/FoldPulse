@@ -8,11 +8,11 @@ struct HistoryView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if model.events.isEmpty {
+                if model.recentEvents.isEmpty {
                     ContentUnavailableView("No folds yet", systemImage: "list.bullet.rectangle",
                                            description: Text("Your folds and unfolds will appear here."))
                 } else {
-                    List(model.events.reversed().prefix(500)) { event in
+                    List(model.recentEvents) { event in
                         EventRow(event: event)
                     }
                 }

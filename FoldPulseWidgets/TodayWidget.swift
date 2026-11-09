@@ -34,13 +34,20 @@ struct SnapshotProvider: TimelineProvider {
         completion(context.isPreview ? placeholder(in: context) : currentEntry(at: .now))
     }
 
-    /// One entry now and one at the next local midnight, so "today" resets
-    /// without spending a reload (WIDGET_DESIGN §2 midnight rule).
+    /// Entries: now; when the data turns stale (to show "as of"); and the next
+    /// local midnight (so "today" resets without a reload). The widget re-reads the
+    /// snapshot every 30 minutes, so a reload the app throttled is never lost.
     func getTimeline(in context: Context, completion: @escaping (Timeline<SnapshotEntry>) -> Void) {
         let now = Date.now
         let midnight = WidgetSnapshot.nextMidnight(after: now, timeZone: .current)
-        let entries = [currentEntry(at: now), currentEntry(at: midnight)]
-        completion(Timeline(entries: entries, policy: .after(midnight.addingTimeInterval(60))))
+        let snapshot = SnapshotFile.read() ?? .empty(now: now, timeZone: .current)
+        var dates = [now]
+        let staleAt = snapshot.generatedAt.addingTimeInterval(WidgetSnapshot.staleAfter + 1)
+        if staleAt > now && staleAt < midnight { dates.append(staleAt) }
+        dates.append(midnight)
+        let entries = dates.map { SnapshotEntry(date: $0, snapshot: snapshot) }
+        let refresh = min(midnight.addingTimeInterval(60), now.addingTimeInterval(30 * 60))
+        completion(Timeline(entries: entries, policy: .after(refresh)))
     }
 
     private func currentEntry(at date: Date) -> SnapshotEntry {

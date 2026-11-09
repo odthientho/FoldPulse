@@ -6,12 +6,13 @@ public struct FoldEvent: Codable, Sendable, Hashable, Identifiable {
     public var id: UUID
     public var type: EventType
     public var source: DetectionSource
-    /// The instant the event happened (UTC).
-    public var timestamp: Date
+    /// The instant the event happened (UTC). Change it with `setTimestamp(_:)`,
+    /// which keeps `localDay` consistent.
+    public private(set) var timestamp: Date
     /// Time zone at capture; kept even when the time is edited.
     public var timeZoneID: String
     /// Local calendar day at capture, used for daily buckets.
-    public var localDay: LocalDay
+    public private(set) var localDay: LocalDay
     public var note: String?
     public var createdAt: Date
     /// Last change (edit, delete, import merge). Newer wins on import.
@@ -39,14 +40,16 @@ public struct FoldEvent: Codable, Sendable, Hashable, Identifiable {
         deletedAt: Date? = nil,
         duplicateOf: UUID? = nil,
         inferredIntervalStart: Date? = nil,
-        inferredIntervalEnd: Date? = nil
+        inferredIntervalEnd: Date? = nil,
+        localDay: LocalDay? = nil
     ) {
         self.id = id
         self.type = type
         self.source = source
         self.timestamp = timestamp
         self.timeZoneID = timeZone.identifier
-        self.localDay = LocalDay(date: timestamp, timeZone: timeZone)
+        // A stored day (from the database) skips the calendar computation.
+        self.localDay = localDay ?? LocalDay(date: timestamp, timeZone: timeZone)
         self.note = note
         self.createdAt = createdAt ?? timestamp
         self.updatedAt = updatedAt ?? createdAt ?? timestamp
@@ -55,6 +58,13 @@ public struct FoldEvent: Codable, Sendable, Hashable, Identifiable {
         self.duplicateOf = duplicateOf
         self.inferredIntervalStart = inferredIntervalStart
         self.inferredIntervalEnd = inferredIntervalEnd
+    }
+
+    /// Changes the time of the event (an edit). The local day is recomputed in the
+    /// *capture* time zone, which never changes (feasibility §6).
+    public mutating func setTimestamp(_ newValue: Date) {
+        timestamp = newValue
+        localDay = LocalDay(date: newValue, timeZone: timeZone)
     }
 
     /// Not deleted and not merged into another event.

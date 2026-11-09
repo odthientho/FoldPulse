@@ -2,23 +2,25 @@ import SwiftUI
 import FoldPulseCore
 
 /// Today dashboard (SCREEN_SPECIFICATIONS §2) using real data from the store.
+/// Numbers are computed off the main thread by `EventStore.loadState`.
 /// Recording and live hinge counting are wired up in Phase 4.
 struct TodayView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        let stats = model.dashboard
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: FPSpace.m) {
-                    let stats = TodayStats(events: model.events, now: .now, timeZone: .current)
-                    HeroCounter(label: "Folds since install", value: stats.total)
-                    MilestoneBar(total: stats.total)
-                    if stats.total == 0 {
+                    HeroCounter(label: "Folds since install", value: stats.snapshot.totalSinceInstall)
+                    MilestoneBar(total: stats.snapshot.totalSinceInstall)
+                    if stats.snapshot.totalSinceInstall == 0 {
                         emptyCard
                     } else {
                         HStack(spacing: FPSpace.m) {
-                            StatTile(label: "Today", value: stats.todayFolds, caption: "\(stats.todayUnfolds) unfolds")
-                            StatTile(label: "Daily average", value: stats.dailyAverage, caption: "last 7 full days")
+                            StatTile(label: "Today", value: stats.snapshot.todayFolds,
+                                     caption: "\(stats.snapshot.todayUnfolds) unfolds")
+                            StatTile(label: "Daily average", value: stats.snapshot.dailyAverage7d, caption: "last 7 full days")
                         }
                         CoverageTile(coverage: stats.coverage)
                         VStack(alignment: .leading) {
@@ -45,27 +47,5 @@ struct TodayView: View {
                 .font(.subheadline).foregroundStyle(FPColor.text2)
         }
         .fpCard()
-    }
-}
-
-/// Derived dashboard numbers (pure; computed from the event log).
-struct TodayStats {
-    let total: Int
-    let todayFolds: Int
-    let todayUnfolds: Int
-    let dailyAverage: Int?
-    let coverage: Coverage
-    let lastSevenDays: [DayCount]
-
-    init(events: [FoldEvent], now: Date, timeZone: TimeZone) {
-        let snapshot = WidgetSnapshot.make(from: events, now: now, timeZone: timeZone)
-        let today = snapshot.localDay
-        let week = LocalDay.range(from: today.adding(days: -6), through: today)
-        total = snapshot.totalSinceInstall
-        todayFolds = snapshot.todayFolds
-        todayUnfolds = snapshot.todayUnfolds
-        dailyAverage = snapshot.dailyAverage7d
-        coverage = Statistics.coverage(events, days: Set(week))
-        lastSevenDays = Statistics.series(events, days: week)
     }
 }
