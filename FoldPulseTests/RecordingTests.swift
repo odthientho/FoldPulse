@@ -55,7 +55,8 @@ final class RecordingTests: XCTestCase {
     func testEditingTimeMarksEditedAndMovesTheDay() async throws {
         let services = try makeServices()
         let model = AppModel(services: services)
-        var event = try XCTUnwrap(await model.record(.fold, source: .hinge))
+        let recorded = await model.record(.fold, source: .hinge)
+        var event = try XCTUnwrap(recorded)
         event.setTimestamp(event.timestamp.addingTimeInterval(-2 * 86_400))
         await model.edit(event)
         let stored = try await services.store.allEvents().first { $0.id == event.id }
