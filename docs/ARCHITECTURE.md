@@ -1,7 +1,7 @@
 # FoldPulse — Architecture
 
 **Owner:** Agent 3 — Senior iOS Technical Architect · **Reviewed by:** Agent 6 (Software Engineer), Agent 11 (Performance), Agent 8 (Privacy), Agent 12 (Independent)
-**Version:** 1.1 (revised after agent reviews) · 9 November 2026 · **Phase:** 3 (foundation)
+**Version:** 1.2 (updated for Phase 4 MVP) · 9 November 2026 · **Phase:** 4
 
 ---
 
@@ -124,10 +124,23 @@ See **DATABASE_DESIGN.md**. In summary:
 | App Intents (Record Fold/Unfold, `.background`) | App target, writing through `EventStore` |
 | Manual record / Undo, History edit/delete, Insights, Coverage, Setup + self-test, Export, Reset, Milestones, Onboarding | `Features/*` |
 
+## 10a. Phase 4 implementation (as built)
+
+| Concern | Where | Notes |
+|---|---|---|
+| Counting rules | `FoldPulseCore/Pipeline/HingeEdgeDetector`, `Reconciler` | Pure, tested on Linux + macOS. Reconciler: hinge backbone, one-to-one pairing of lower-precedence events within ±10 s, same-source groups, gaps, slice protection |
+| Automatic counting | `HingeTracker` (+ `HingeTrackingModifier` under `HINGE_API`) | Active scene only; baseline reset on activation; unknown ignored; saves in a background task |
+| Background counting | `Intents/RecordIntents.swift` → `ShortcutRecorder` → `AppServices.record` | `supportedModes = .background`; fails visibly if the store is unavailable |
+| Shared services | `AppServices` (store, snapshots, settings) | Used by the UI and by intents; one writer (`EventStore`) |
+| Reconciliation | `EventStore.record/edit/delete → reconcile(around:)` | 7-day slice per write, protected boundary |
+| Settings and state | `AppSettings` (App Group defaults) | Milestones claimed once, self-test, last automation runs |
+| Screens | `Features/` Today, Record, History (+ detail/edit), Insights, Coverage, Setup, Settings (+ export/reset/privacy), Onboarding, Milestone | Statistics computed in `EventStore`, off the main thread |
+
 ## 11. Known limitations and open items
 
 | ID | Item | Plan |
 |---|---|---|
-| I-24 | Inner-display tab bar position when partially folded | Check in Xcode 27.1 Device Hub on the Founder's Mac (CI runners may not have the iPhone Duo simulator) |
+| I-24 / P4-2 | Inner-display tab bar position when partially folded; `ArrangementView` split for the inner display | Check and implement in Xcode 27.1 Device Hub on the Founder's Mac (Phase 5) |
+| P4-1 | The `HINGE_API` hookup is compiled only with the iOS 27.1 SDK | Founder's Mac build at the start of Phase 5 |
 | R-29 | **App Groups may need a paid Apple Developer Program membership** for device installs (free personal teams have restricted capabilities) | If signing fails on the Founder's Mac, either join the Program ($99/year, also required for App Store release) or temporarily remove the App Group (widgets then show the empty state) |
 | R-01 | No iPhone Duo in CI | On-device checks stay with the Founder |
