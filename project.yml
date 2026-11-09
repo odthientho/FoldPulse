@@ -38,6 +38,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.odthientho.foldpulse
         PRODUCT_NAME: FoldPulse
+        # Hinge API code needs the iOS 27.1 SDK (DECISIONS T-10); CI removes this flag while
+        # its runners only have older SDKs.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) HINGE_API
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: FoldPulse
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities

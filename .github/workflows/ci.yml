@@ -8,7 +8,8 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Queue main-branch runs (each batch gets its own result); cancel superseded PR runs only.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   core-linux:
@@ -51,6 +52,9 @@ jobs:
             echo "::warning::Runner SDK $SDK_VERSION < 27.1 — deployment target lowered to $SDK_VERSION for CI only."
             echo "### ⚠️ Compile check on iOS $SDK_VERSION SDK (app targets 27.1)" >> "$GITHUB_STEP_SUMMARY"
             sed -i '' "s/iOS: \"27.1\"/iOS: \"$SDK_VERSION\"/" project.yml
+            # The hinge API exists only in the iOS 27.1 SDK: compile without it here.
+            sed -i '' 's/ HINGE_API$//' project.yml
+            echo "- Hinge API code (HINGE_API) excluded: needs the iOS 27.1 SDK" >> "$GITHUB_STEP_SUMMARY"
             grep -n 'iOS:' project.yml
           fi
           xcodegen generate
