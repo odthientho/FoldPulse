@@ -86,6 +86,18 @@ jobs:
           if [ $STATUS -ne 0 ]; then echo "----- last 80 lines -----"; tail -80 xcodebuild.log; fi
           grep -E "Executed [0-9]+ tests" xcodebuild.log | tail -2 >> "$GITHUB_STEP_SUMMARY" || true
           exit $STATUS
+      - name: Export screenshots
+        if: always()
+        run: |
+          mkdir -p screenshots
+          xcrun xcresulttool export attachments --path TestResults.xcresult --output-path screenshots || true
+          ls -la screenshots | head -40
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
