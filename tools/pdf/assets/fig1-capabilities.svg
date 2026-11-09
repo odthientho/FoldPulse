@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 430" font-family="Inter, sans-serif">
+  <rect width="900" height="430" fill="#F7F8FA" rx="14"/>
+  <text x="30" y="40" font-size="18" font-weight="700" fill="#0B1B33">How FoldPulse can observe a fold — by app state</text>
+  <!-- columns -->
+  <g font-size="13" font-weight="600" fill="#5B6472">
+    <text x="300" y="80" text-anchor="middle">App on screen (foreground)</text>
+    <text x="530" y="80" text-anchor="middle">App in background</text>
+    <text x="760" y="80" text-anchor="middle">App not running</text>
+  </g>
+  <g font-size="13" fill="#0B1B33" font-weight="600">
+    <text x="30" y="128">Hinge API</text><text x="30" y="145" font-size="11" fill="#5B6472" font-weight="400">onHingeChange / UIHingeInteraction</text>
+    <text x="30" y="208">Shortcuts automation</text><text x="30" y="225" font-size="11" fill="#5B6472" font-weight="400">"Opened or Closed" → App Intent</text>
+    <text x="30" y="288">Manual / widget button</text><text x="30" y="305" font-size="11" fill="#5B6472" font-weight="400">User taps Record Fold</text>
+    <text x="30" y="368">Core Motion / private APIs</text><text x="30" y="385" font-size="11" fill="#5B6472" font-weight="400">Rejected</text>
+  </g>
+  <g font-size="12" font-weight="600" text-anchor="middle">
+    <!-- row1 -->
+    <rect x="210" y="105" width="180" height="50" rx="10" fill="#2F7BFF"/><text x="300" y="135" fill="#fff">Automatic ✓</text>
+    <rect x="440" y="105" width="180" height="50" rx="10" fill="#E3E6EB"/><text x="530" y="135" fill="#5B6472">No updates</text>
+    <rect x="670" y="105" width="180" height="50" rx="10" fill="#E3E6EB"/><text x="760" y="135" fill="#5B6472">No updates</text>
+    <!-- row2 -->
+    <rect x="210" y="185" width="180" height="50" rx="10" fill="#8DB6FF"/><text x="300" y="215" fill="#0B1B33">Assisted (deduped)</text>
+    <rect x="440" y="185" width="180" height="50" rx="10" fill="#8DB6FF"/><text x="530" y="215" fill="#0B1B33">Assisted ✓ (iOS 27.2)</text>
+    <rect x="670" y="185" width="180" height="50" rx="10" fill="#8DB6FF"/><text x="760" y="215" fill="#0B1B33">Assisted ✓ (iOS 27.2)</text>
+    <!-- row3 -->
+    <rect x="210" y="265" width="180" height="50" rx="10" fill="#C9D3E3"/><text x="300" y="295" fill="#0B1B33">Manual ✓</text>
+    <rect x="440" y="265" width="180" height="50" rx="10" fill="#C9D3E3"/><text x="530" y="295" fill="#0B1B33">Widget button ✓</text>
+    <rect x="670" y="265" width="180" height="50" rx="10" fill="#C9D3E3"/><text x="760" y="295" fill="#0B1B33">Widget button ✓</text>
+    <!-- row4 -->
+    <rect x="210" y="345" width="640" height="50" rx="10" fill="none" stroke="#D0453A" stroke-dasharray="6 4" stroke-width="1.5"/><text x="530" y="375" fill="#D0453A">Not used: no public hinge data; private APIs violate App Store rules</text>
+  </g>
+  <text x="30" y="420" font-size="11" fill="#5B6472">Assisted mode requires the user to create the automation once. Its run-without-prompt behaviour and reliability while locked are unverified (spike).</text>
+</svg>

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 545" font-family="Inter, sans-serif">
+  <rect width="900" height="545" fill="#F7F8FA" rx="14"/>
+  <text x="30" y="38" font-size="18" font-weight="700" fill="#0B1B33">Concept sketches — dashboard and widgets (illustrative values, not user data)</text>
+  <!-- cover display phone -->
+  <g transform="translate(40,60)">
+    <rect width="230" height="440" rx="34" fill="#0B1B33"/>
+    <rect x="10" y="10" width="210" height="420" rx="26" fill="#070F1F"/>
+    <text x="28" y="58" font-size="12" fill="#8DA2C4">FoldPulse</text>
+    <text x="28" y="78" font-size="11" fill="#5B6E8F">Folds since install</text>
+    <text x="28" y="122" font-size="40" font-weight="700" fill="#fff" letter-spacing="-1">12,458</text>
+    <rect x="28" y="138" width="174" height="6" rx="3" fill="#1E3358"/><rect x="28" y="138" width="144" height="6" rx="3" fill="#2F7BFF"/>
+    <text x="28" y="160" font-size="10" fill="#8DA2C4">2,542 to 15,000 milestone</text>
+    <rect x="28" y="176" width="82" height="66" rx="12" fill="#12233F"/><text x="38" y="198" font-size="10" fill="#8DA2C4">Today</text><text x="38" y="228" font-size="22" font-weight="700" fill="#fff">38</text>
+    <rect x="120" y="176" width="82" height="66" rx="12" fill="#12233F"/><text x="130" y="198" font-size="10" fill="#8DA2C4">7-day avg</text><text x="130" y="228" font-size="22" font-weight="700" fill="#fff">42</text>
+    <rect x="28" y="252" width="174" height="44" rx="12" fill="#12233F"/><text x="38" y="270" font-size="10" fill="#8DA2C4">Coverage this week</text><text x="38" y="287" font-size="13" font-weight="700" fill="#5CC8FF">97% automatic</text>
+    <g fill="#2F7BFF"><rect x="34" y="350" width="16" height="30" rx="3"/><rect x="58" y="335" width="16" height="45" rx="3"/><rect x="82" y="342" width="16" height="38" rx="3"/><rect x="106" y="325" width="16" height="55" rx="3"/><rect x="130" y="340" width="16" height="40" rx="3"/><rect x="154" y="330" width="16" height="50" rx="3"/><rect x="178" y="345" width="16" height="35" rx="3" fill="#5CC8FF"/></g>
+    <text x="28" y="318" font-size="10" fill="#8DA2C4">Last 7 days</text>
+    <text x="28" y="404" font-size="10" fill="#5B6E8F">Last: folded 2 min ago · Automatic</text>
+    <text x="115" y="462" font-size="11" text-anchor="middle" fill="#0B1B33" font-weight="600">Outer display · dashboard (dark)</text>
+  </g>
+  <!-- inner display -->
+  <g transform="translate(300,60)">
+    <rect width="330" height="300" rx="28" fill="#C9D3E3"/>
+    <rect x="9" y="9" width="312" height="282" rx="21" fill="#fff"/>
+    <line x1="165" y1="9" x2="165" y2="291" stroke="#E3E6EB" stroke-dasharray="3 3"/>
+    <text x="26" y="44" font-size="11" fill="#5B6472">Folds since install</text>
+    <text x="26" y="82" font-size="32" font-weight="700" fill="#0B1B33">12,458</text>
+    <rect x="26" y="100" width="122" height="52" rx="10" fill="#F7F8FA"/><text x="36" y="120" font-size="10" fill="#5B6472">Today</text><text x="36" y="142" font-size="18" font-weight="700" fill="#0B1B33">38</text>
+    <rect x="26" y="160" width="122" height="52" rx="10" fill="#F7F8FA"/><text x="36" y="180" font-size="10" fill="#5B6472">Coverage</text><text x="36" y="202" font-size="16" font-weight="700" fill="#2F7BFF">97%</text>
+    <rect x="26" y="220" width="122" height="52" rx="10" fill="#F7F8FA"/><text x="36" y="240" font-size="10" fill="#5B6472">Next milestone</text><text x="36" y="262" font-size="14" font-weight="700" fill="#0B1B33">15,000</text>
+    <text x="182" y="44" font-size="11" fill="#5B6472">This week</text>
+    <polyline points="182,200 202,170 222,182 242,140 262,160 282,120 302,150" fill="none" stroke="#2F7BFF" stroke-width="3" stroke-linejoin="round"/>
+    <line x1="182" y1="210" x2="305" y2="210" stroke="#E3E6EB"/>
+    <text x="182" y="236" font-size="10" fill="#5B6472">Recent</text>
+    <text x="182" y="254" font-size="10" fill="#0B1B33">14:02 Fold · Auto</text><text x="182" y="270" font-size="10" fill="#0B1B33">13:47 Unfold · Shortcut</text>
+    <text x="165" y="320" font-size="11" text-anchor="middle" fill="#0B1B33" font-weight="600">Inner display · two-column (light); content avoids the fold region</text>
+  </g>
+  <!-- widgets -->
+  <g transform="translate(660,60)">
+    <rect width="160" height="160" rx="26" fill="#0B1B33"/>
+    <text x="18" y="34" font-size="11" fill="#8DA2C4">Today</text>
+    <text x="18" y="80" font-size="40" font-weight="700" fill="#fff">38</text>
+    <text x="18" y="104" font-size="11" fill="#8DA2C4">folds</text>
+    <text x="18" y="140" font-size="10" fill="#5B6E8F">12,458 total · as of 14:02</text>
+    <text x="80" y="182" font-size="11" text-anchor="middle" fill="#0B1B33" font-weight="600">Home small · StandBy</text>
+  </g>
+  <g transform="translate(655,262)">
+    <circle cx="40" cy="40" r="34" fill="#E3E6EB"/>
+    <circle cx="40" cy="40" r="28" fill="none" stroke="#C9D3E3" stroke-width="6"/>
+    <path d="M40 12 A28 28 0 1 1 15 53" fill="none" stroke="#0B1B33" stroke-width="6" stroke-linecap="round"/>
+    <text x="40" y="45" font-size="14" font-weight="700" text-anchor="middle" fill="#0B1B33">38</text>
+    <rect x="92" y="10" width="140" height="60" rx="12" fill="#E3E6EB"/>
+    <text x="104" y="32" font-size="10" fill="#5B6472">FoldPulse</text><text x="104" y="50" font-size="13" font-weight="700" fill="#0B1B33">38 today</text><text x="104" y="64" font-size="10" fill="#5B6472">12,458 total</text>
+    <text x="116" y="96" font-size="11" text-anchor="middle" fill="#0B1B33" font-weight="600">Lock Screen: circular gauge · rectangular</text>
+  </g>
+  <g transform="translate(300,410)" font-size="11.5" fill="#0B1B33">
+    <text y="0" font-weight="700">UI/UX Director notes (Agent 4)</text>
+    <text y="20">• The hero number always says "since install". Each tile shows its source or freshness.</text>
+    <text y="38">• The coverage tile is the trust signal and gets top-level placement.</text>
+    <text y="56">• Outer display: one column, bars on the side (system vertical bars).</text>
+    <text y="74">• Inner display: split layout via system containers; nothing in the fold region.</text>
+    <text y="92">• Widgets show an "as of" time; Lock Screen counts are privacy-sensitive.</text>
+  </g>
+</svg>
