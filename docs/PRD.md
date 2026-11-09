@@ -49,7 +49,7 @@ Duo Fold Counter ranked about #10 in US Utilities (Similarweb, 2 Nov 2026) and a
 
 **What this means:** the core mechanism is proven and approvable. The market is not empty, though. FoldPulse must win on **experience, trust and polish** rather than on novelty:
 
-1. **Tracking coverage indicator (headline differentiator)** — "Automatic capture covered 97% of your folds this week", plus a per-source breakdown (Automatic / Shortcut / Manual / Inferred). Users see how much to trust the number.
+1. **Tracking coverage indicator (headline differentiator)** — "Counted for you: 97% of your recorded folds this week" (wording revised in Phase 2: folds missed entirely can't be in the denominator), plus a per-source breakdown (Automatic / Shortcut / Manual / Inferred). Users see how much to trust the number.
 1a. **Factual context instead of fake "hinge health"** — e.g. "12,458 folds since install". FoldPulse cites a manufacturer rating only if Apple publishes one, and never estimates wear.
 2. **Best-in-class widgets** — Home, Lock Screen and StandBy, with an honest "as of" freshness label.
 3. **Analytics depth** — time-of-day patterns, open-session length, trends, milestones.
@@ -87,7 +87,7 @@ IDs map to MVP features. "AC" = acceptance criteria. All metrics follow `TECHNIC
 - AC2: A guided setup screen explains the steps, with illustrations, and deep-links to Shortcuts where possible.
 - AC3: A self-test confirms that the automation fired ("We saw your fold at 14:02 ✓").
 - AC4: Background events carry source `shortcut`.
-- AC5: If a `hinge` event and a `shortcut` event of the same type occur within 3 s, exactly one event is kept.
+- AC5: Same-type events from different sources (hinge, shortcut, **manual**) with no opposite-type event between them and |Δt| ≤ **10 s**, in either order, are merged into exactly one event (feasibility §6; aligned in Phase 2).
 - AC6: The app clearly states that this mode depends on iOS 27.2+ and on the user's automation.
 
 **US-03 — Manual recording.** *As any user, I want to record a fold or unfold by hand.*
@@ -113,7 +113,7 @@ IDs map to MVP features. "AC" = acceptance criteria. All metrics follow `TECHNIC
 **US-07 — Trends.** Day/Week/Month/Year charts of folds; daily/weekly/monthly averages; highest-activity day; time-of-day heat strip.
 - AC1: Aggregates use the event's recorded local time zone (see the Data Analyst's rules).
 - AC2: Averages state their denominator ("per tracked day since 2 Nov").
-- AC3: Open-session (unfold→fold) duration stats are shown only when ≥ 80% of the period's events are non-inferred, otherwise hidden with an explanation.
+- AC3: *(v1.1, deferred by D-6)* Open-session (unfold→fold) duration stats are shown only when ≥ 80% of the period's events are non-inferred, otherwise hidden with an explanation.
 
 ### Milestones
 
@@ -122,15 +122,15 @@ IDs map to MVP features. "AC" = acceptance criteria. All metrics follow `TECHNIC
 
 ### Widgets
 
-**US-09 — Widgets.** Home small/medium/large, Lock Screen circular/rectangular/inline; small works in StandBy.
+**US-09 — Widgets.** **v1 (D-6):** Home small (also used in StandBy) and Lock Screen circular + rectangular. *v1.1:* medium, large, inline and the interactive button.
 - AC1: Every widget shows data as of its last snapshot and displays the "as of" time when the data is older than 15 minutes.
-- AC2: Optional interactive "+ Fold" button on the Home Screen widget (source `manual`). Works only while unlocked (an Apple restriction); not available on Lock Screen widgets.
+- AC2: *(v1.1)* Optional interactive "+ Fold" button on the Home Screen widget (source `manual`). Works only while unlocked (an Apple restriction); not available on Lock Screen widgets.
 - AC3: Lock Screen widgets hide their counts when the device is locked and the user has chosen to hide sensitive data (`.privacySensitive()`).
 
 ### Data
 
-**US-10 — Own my data.** Export JSON (full fidelity) and CSV (formula-injection safe; a notice says exports reveal daily routine); import JSON (validate, preview, then merge without duplicates by event ID); reset everything with two-step confirmation.
-- AC: An import of a corrupt or malicious file fails safely with a clear message and no partial writes.
+**US-10 — Own my data.** Export JSON (full fidelity) and CSV (formula-injection safe; a notice says exports reveal daily routine); reset everything with two-step confirmation. *Import JSON (validate, preview, merge without duplicates by event ID) is v1.1 (D-6).*
+- AC *(v1.1, import)*: An import of a corrupt or malicious file fails safely with a clear message and no partial writes.
 
 ### Settings
 
@@ -139,7 +139,7 @@ IDs map to MVP features. "AC" = acceptance criteria. All metrics follow `TECHNIC
 - AC2: Tapping it explains how to raise coverage (set up or repair the automation).
 - AC3: The Shortcuts self-test result and the date of the last automation-fired event are visible.
 
-**US-11 — Settings.** Theme (System/Light/Dark), count inferred events (on/off), milestone notifications, Shortcuts setup and self-test, data management, privacy statement, About.
+**US-11 — Settings.** Theme (System/Light/Dark), milestone notifications, Shortcuts setup and self-test, export and reset, privacy statement, About. *(The inferred-events toggle is v1.1; gaps are excluded from totals per D-2.)*
 
 ## 7. Non-functional requirements
 
@@ -151,7 +151,7 @@ IDs map to MVP features. "AC" = acceptance criteria. All metrics follow `TECHNIC
 
 ## 8. Explicit non-goals (MVP)
 
-iCloud sync; Apple Watch app; social sharing/leaderboards; hinge "health" scores or warranty claims (FoldPulse cannot measure wear and must not imply it can); Android; monetization.
+iCloud sync; Apple Watch app; social sharing/leaderboards; hinge "health" scores or warranty claims (FoldPulse cannot measure wear and must not imply it can); Android; in-app purchases, subscriptions and ads (the business model is **paid up front**, D-5).
 
 ## 9. Product decisions (resolved 2026-11-09 — see DECISIONS.md)
 
@@ -163,5 +163,5 @@ All recommendations below were accepted. **D-5 was decided as _paid up front_.**
 | D-2 | Count `inferred` events in headline totals? | No by default; user toggle |
 | D-3 | Minimum OS iOS 27.1, iPhone Duo-focused? | Yes |
 | D-4 | Show a "Requires iPhone Duo" notice on other iPhones vs. a manual-only mode | Manual-only mode with a clear notice (reduces App Review risk) |
-| D-5 | Business model (free / paid up front / one-time unlock / tip jar) | **Decide before Phase 2**: it shapes design (paywall surfaces). Must stay privacy-preserving (StoreKit only, no ad or analytics SDKs) |
+| D-5 | Business model | **Decided: paid up front** (no IAP, no ads, no analytics SDKs) |
 | D-6 | Adopt the **lean v1** proposed by the Founder Representative (see MVP_SCOPE §4)? | Yes — ship faster against established competitors |

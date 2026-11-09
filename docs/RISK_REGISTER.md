@@ -9,7 +9,7 @@ Severity: Critical · High · Medium · Low. Likelihood: H / M / L.
 | ID | Risk | Sev. | Lik. | Owner | Mitigation | Status |
 |---|---|---|---|---|---|---|
 | R-01 | **No macOS/Xcode or physical iPhone Duo is available to the team.** The cloud workspace runs Linux and cannot build or run iOS apps | Critical | H | Architect | Founder provides a Mac with Xcode 27.1+ and an iPhone Duo (or a macOS CI runner / Remote Control to the Founder's Mac) before Phase 3. All device claims stay "unverified" until then | **Open — Founder action** |
-| R-02 | The Shortcuts automation asks for confirmation each run, or doesn't fire while locked → background counting impractical | High | M | Architect / Compliance | Validation spike step 3. Fallback: foreground + manual; revise marketing | Open |
+| R-02 | The Shortcuts automation asks for confirmation each run, doesn't fire while locked, or isn't available (the Founder couldn't find the trigger during the spike) → background counting impractical | High | M | Architect / Compliance | Background counting designed as **optional**; the app is complete without it. Verify S-2/S-3 before Phase 5 sign-off; claims stay conservative | Open — unverified (spike skipped, C-2r) |
 | R-03 | Hinge callbacks fire on display/hierarchy moves → double counts | High | M | Engineer / Data Analyst | Edge-based commit vs. last committed state; 250 ms debounce; dedupe window | Designed – unverified |
 | R-04 | Foreground hinge event + Shortcut event for the same physical fold → double count | High | H | Data Analyst | 3 s cross-source dedupe; keep `hinge` | Designed – unverified |
 | R-05 | Established competitors (Duo Fold Counter, Fold Counter) reduce the market opportunity | High | H | PM / Founder Rep | Differentiate on transparency, widgets, setup UX, privacy. **Founder decision D-1** | Open — Founder decision |
@@ -33,6 +33,8 @@ Severity: Critical · High · Medium · Low. Likelihood: H / M / L.
 | R-20 | Overstating the count as "lifetime" or "trustworthy". The count starts at install and can be edited | Medium | M | PM / Compliance | Copy uses "since install"; source breakdown and coverage metric | Designed – unverified |
 | R-21 | Late entry. Competitors (Duo Fold Counter ~#10 US Utilities on 2 Nov 2026; FoldMeter; Foldometer) are 2–3 months ahead | High | H | Founder Rep | Slim v1, ship fast, lead with the coverage/trust feature | Open — Founder decision |
 | R-26 | **Paid up front vs. free/cheap competitors**: lower conversion from browse to install; reviewers expect more polish for a paid app | Medium | H | Founder Rep / PM | Clear App Store screenshots of the differentiators (coverage, widgets); consider a launch price; revisit in Phase 6 | Open (accepted with D-5) |
+| R-27 | App Review or users read the pulse motif + name as a **health app** (1.4.1 / 5.1.3) | Medium | L | Compliance | Utilities category; no health keywords; copy says "counts folds", never health | Designed – unverified |
+| R-28 | **Paid app with an unverified core feature.** If background counting doesn't work for most users, a "since install" count covers only folds made with the app open → refunds and poor reviews (Founder Rep, Phase 2) | High | M | Founder Rep / PM | Foreground-only state designed honestly ("Folds counted since install"); **recommend running S-2/S-3 on iOS 27.2 before setting a price**; claims limited per SPIKE_RESULTS | Open — Founder decision |
 | R-16 | Scope creep (Watch, sync, social) | Low | M | PM | MVP_SCOPE out-of-scope list; change-control via Founder | Controlled |
 
 ## 2. Issue log (Phase 1 agent reviews)
@@ -48,6 +50,14 @@ Severity: Critical · High · Medium · Low. Likelihood: H / M / L.
 | I-07 | Milestone notifications require a permission prompt | Low | Founder Rep | UX | Opt-in only | Resolved | Adopted |
 | I-08 | Widget count (6 variants) is heavy for v1 | Low | Founder Rep | PM | Tiered Must/Should | Resolved | Adopted |
 | I-09 | Press sources could not be fetched directly (network policy); relied on search summaries | Medium | Independent Reviewer | Architect | Confidence downgraded to Medium; device verification | Resolved (documented) | Accepted |
+| I-18 | Setup screen implied FoldPulse could see Shortcuts steps (checkmarks) | High | UI Dev / Compliance / Independent | UX | Plain numbered steps; only the self-test reports status | Resolved | Adopted (Phase 2) |
+| I-19 | Coverage metric overclaimed ("94% · Good"; name clashed with the "Automatic" source) | High | Independent / UI Dev | UX + Data Analyst | Renamed "Counted for you · % of recorded folds"; no verdict word | Resolved | Adopted (Phase 2) |
+| I-20 | Sample data inconsistent (weekdays, totals, gap placement, event counts) | Medium | Independent | UX | One seed dataset (install Oct 24, today Mon Nov 9 14:04) | Resolved | Adopted (Phase 2) |
+| I-21 | Deferred items (gap toggle, import, extra widgets, session stats) still in the PRD/specs | Medium | Founder Rep / Independent / UI Dev | PM | Tagged v1.1; PRD aligned with D-5/D-6/C-2r | Resolved | Adopted (Phase 2) |
+| I-22 | Icon read as an open book; Dark variant not dark | Medium | Compliance | UX | Upright phone panels; true dark/tinted variants; Icon Composer for final layers | Resolved | Adopted (Phase 2) |
+| I-23 | Fold-region rule wrong (reserved only when partially open) | Medium | UI Dev | UX | ArrangementView split; rule corrected | Resolved | Adopted (Phase 2) |
+| I-24 | Inner tab bar over the fold when partially open: UI Dev accepts (system-drawn); Compliance wants device validation | Low | UI Dev vs Compliance | UX | Check in Xcode Device Hub in Phase 3 | **Disagreement recorded** | Pending Phase 3 check |
+| I-25 | No App Store product-page / screenshot concept for a paid app | Medium | Founder Rep | PM | Deferred to Phase 6 (release), explicitly | Deferred | Phase 6 |
 | I-10 | Local notifications for milestones are local only — confirm that no APNs entitlement is needed | Low | Privacy | Privacy | Use `UNUserNotificationCenter` local only; no push entitlement | Resolved | Adopted |
 | I-11 | SwiftUI hinge API was missed in the first research pass (wrong URL) | Medium | Compliance | Architect | Verified and documented | Resolved | Adopted |
 | I-12 | Widget button intent runs in the extension process; inactive while locked | High | Compliance | Architect | Queue file; widget button is unlocked-only and Should, not Must | Resolved in design | Adopted |

@@ -38,7 +38,7 @@
 | Apple Watch, iPad, Mac | No hinge on those platforms; scope |
 | Live Activities | Little value; adds complexity |
 | Control Center control (iOS 18+ Controls) | Nice-to-have post-MVP (v1.1) |
-| Monetization / IAP | Phase 6 decision |
+| In-app purchases / subscriptions / ads | Business model is **paid up front** (D-5); the price is set in Phase 6 |
 | Localization beyond English | v1.1 |
 
 ## 4. Founder Representative challenge (Agent 2) — and resolution
