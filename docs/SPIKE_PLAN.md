@@ -21,7 +21,13 @@ If (2) fails, the team recommends pausing the project (see the Phase 1 report, c
 
 ## Part 1 — Install FoldProbe (≈ 15 min)
 
-**Easiest:** let Claude Code on your Mac do it. Paste the message in `spike/MAC_SESSION_PROMPT.md`. The manual steps below are the alternative.
+**Easiest (no Claude needed on the Mac):** plug in the iPhone, open Terminal and paste:
+
+```
+curl -fsSL https://raw.githubusercontent.com/odthientho/FoldPulse/main/spike/setup_mac.sh | bash
+```
+
+The script downloads the project, generates `FoldProbe.xcodeproj` and opens Xcode. Then, in Xcode: **FoldProbe target → Signing & Capabilities → Team** = your Apple ID; choose your iPhone at the top; press **▶ Run**. You still need step 5 below (Developer Mode). If you have Claude Code on the Mac, `spike/MAC_SESSION_PROMPT.md` lets it do everything instead. The manual steps below are the fallback.
 
 FoldProbe is a throwaway diagnostic app. It is **not** FoldPulse and will never ship. It writes a log file on your phone and never uses the network.
 
