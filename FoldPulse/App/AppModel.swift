@@ -244,7 +244,7 @@ final class AppModel {
                 events.append(FoldEvent(type: .fold, source: sources[(i + 1) % sources.count], timestamp: t.addingTimeInterval(240), timeZone: timeZone))
             }
         }
-        do { try await services.store.add(contentsOf: events) } catch { lastError = String(describing: error) }
+        do { try await services.store.add(contentsOf: events, checkingDuplicates: false) } catch { lastError = String(describing: error) }
         await reload()
     }
 

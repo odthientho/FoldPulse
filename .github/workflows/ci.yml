@@ -82,12 +82,28 @@ jobs:
             -project FoldPulse.xcodeproj -scheme FoldPulse \
             -destination "id=$SIM_UDID" \
             -resultBundlePath TestResults.xcresult \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO > xcodebuild.log 2>&1
           STATUS=$?
           grep -E "error:|warning: |Test Case .*(passed|failed)|Executed|\*\* " xcodebuild.log | tail -400
           if [ $STATUS -ne 0 ]; then echo "----- last 80 lines -----"; tail -80 xcodebuild.log; fi
           grep -E "Executed [0-9]+ tests" xcodebuild.log | tail -2 >> "$GITHUB_STEP_SUMMARY" || true
+          grep -E "PERF |measured \[" xcodebuild.log | tee -a "$GITHUB_STEP_SUMMARY" || true
           exit $STATUS
+      - name: Privacy audit — no networking APIs linked in the built binaries (TEST_PLAN PT-02)
+        run: |
+          set -e
+          APP=build/Build/Products/Debug-iphonesimulator/FoldPulse.app
+          BINARIES="$(ls $APP/FoldPulse $APP/FoldPulse.debug.dylib $APP/PlugIns/FoldPulseWidgets.appex/FoldPulseWidgets $APP/PlugIns/FoldPulseWidgets.appex/FoldPulseWidgets.debug.dylib 2>/dev/null || true)"
+          [ -n "$BINARIES" ] || { echo "::error::built binaries not found"; exit 1; }
+          FOUND=0
+          for b in $BINARIES; do
+            echo "== $b"
+            if nm -u "$b" | grep -E "NSURLSession|URLSession|NSURLConnection|nw_connection|nw_endpoint|CFNetwork|CFHTTP|CFStream.*Socket|SCNetworkReachability|CKContainer|CKDatabase"; then FOUND=1; fi
+            otool -L "$b" | grep -E "Network.framework|CFNetwork|CloudKit" && FOUND=1 || true
+          done
+          if [ $FOUND -ne 0 ]; then echo "::error::networking APIs referenced by the binary"; exit 1; fi
+          echo "PT-02: no networking APIs imported by FoldPulse or its widget." | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Export screenshots
         if: always()
         run: |

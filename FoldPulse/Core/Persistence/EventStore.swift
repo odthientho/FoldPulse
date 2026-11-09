@@ -26,10 +26,11 @@ actor EventStore {
         try modelContext.save()
     }
 
-    /// Inserts many events with a single save (rejects any existing id).
-    func add(contentsOf events: [FoldEvent]) throws {
+    /// Inserts many events with a single save. Rejects any existing id unless
+    /// `checkingDuplicates` is false (fresh UUIDs only: test seeding, sample data).
+    func add(contentsOf events: [FoldEvent], checkingDuplicates: Bool = true) throws {
         for event in events {
-            if try row(event.id) != nil { throw StoreError.duplicateID(event.id) }
+            if checkingDuplicates, try row(event.id) != nil { throw StoreError.duplicateID(event.id) }
             modelContext.insert(StoredEvent(event))
         }
         try modelContext.save()

@@ -4,6 +4,7 @@ Product and technical decisions, newest first. Only the Founder makes product de
 
 | ID | Date | Decision | Decided by | Context / consequence |
 |---|---|---|---|---|
+| A-4 | 2026-11-09 | **Phase 4 approved** (MVP; 89 tests green; review fixes applied) | Founder | Open: P4-1, P4-2 (device), R-28, R-29 |
 | A-3 | 2026-11-09 | **Phase 3 approved** (architecture, foundation, CI green) | Founder | Open: 27.1 build on the Founder's Mac; R-29 (Developer Program); R-28, I-24 |
 | T-10 | 2026-11-09 | Hinge code is compiled behind `HINGE_API` (set in project.yml; CI removes it while runners lack the iOS 27.1 SDK) | Architect (Phase 4) | CI verifies everything else; hinge file verified on the Founder's Mac |
 | A-2 | 2026-11-09 | **Phase 2 approved** (design system, icon, screens, flows, widgets) | Founder | Open items carried: R-28 (verify background counting before pricing), I-24 (inner tab bar when partially folded → check in Phase 3) |

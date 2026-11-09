@@ -12,6 +12,13 @@ enum PersistenceController {
         }
     }
 
+    /// A file-backed container at an explicit location (UI tests, migration fixtures).
+    static func makeContainer(url: URL) throws -> ModelContainer {
+        let schema = Schema(versionedSchema: SchemaV1.self)
+        let configuration = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)
+        return try ModelContainer(for: schema, migrationPlan: FoldPulseMigrationPlan.self, configurations: [configuration])
+    }
+
     static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
         let schema = Schema(versionedSchema: SchemaV1.self)
         let configuration: ModelConfiguration

@@ -82,6 +82,18 @@ final class AppServices {
                               defaults: nil, reloadWidgets: {})
             : SnapshotService()
         do {
+            #if DEBUG
+            // DT-01: a file-backed test store that survives relaunch (-ui-testing-persistent);
+            // -ui-testing-reset deletes it first.
+            let arguments = ProcessInfo.processInfo.arguments
+            if uiTesting, arguments.contains("-ui-testing-persistent") {
+                let directory = FileManager.default.temporaryDirectory.appendingPathComponent("ui-test-store", isDirectory: true)
+                if arguments.contains("-ui-testing-reset") { try? FileManager.default.removeItem(at: directory) }
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                let container = try PersistenceController.makeContainer(url: directory.appendingPathComponent("FoldPulse.store"))
+                return AppServices(container: container, snapshots: snapshots, settings: settings, isUITesting: true)
+            }
+            #endif
             let container = try PersistenceController.makeContainer(inMemory: uiTesting)
             return AppServices(container: container, snapshots: snapshots, settings: settings, isUITesting: uiTesting)
         } catch {
