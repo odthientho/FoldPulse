@@ -44,7 +44,10 @@ def tree():
 
 def chapters():
     return [
-        ("Executive summary & recommendation", (DOCS / "PHASE3_SUMMARY.html").read_text()),
+        ("Executive summary & recommendation",
+         '<div class="decision"><div class="label">Phase 3 recommendation</div><div class="verdict">APPROVE</div>'
+         '<p>The foundation builds and all 43 automated tests pass in CI. The High and Medium review findings are fixed.</p></div>'
+         + base.md((DOCS / "PHASE3_SUMMARY.md").read_text())),
         ("Architecture", fig("arch-modules", "Figure 1 — Module structure and dependencies")
          + fig("arch-dataflow", "Figure 2 — Data flow") + base.doc_body("ARCHITECTURE.md")),
         ("Database design", fig("arch-schema", "Figure 3 — Persistence schema") + base.doc_body("DATABASE_DESIGN.md")),
