@@ -54,4 +54,31 @@ Build results come from CI (GitHub Actions); run numbers link to https://github.
 |---|---|---|---|
 | #7 | `870359d` (batch A) | **Green** | Core tests pass on Linux and macOS |
 | #8 | `6b0dddb` (batches B + C) | Failed | One compile error in a test: `XCTUnwrap(await …)` isn't allowed (async call in a non-async autoclosure). All app sources compiled |
-| #9 | `1436d83` | *(pending at time of writing)* | Fix for #8 |
+| #9 | `1436d83` | **Green** | Batches B + C build and pass all tests (pre-review) |
+| #11, #12 | `53f8922`, `e2abeac` | Cancelled | Superseded while still queued (GitHub keeps one waiting run per branch); their code is included in #13 |
+| #13 | `7249679` | Failed (UI) | All 86 unit/core tests and both functional UI tests pass. The new `ScreenshotTests` found a **real UI bug**: the milestone sheet presented over the Settings tab and covered the tab bar |
+| #14 | `80e99c3` | **Green** | Milestone sheet only while Today is visible. **57 core + 29 app + 3 UI = 89 tests, 0 failures** |
+
+## Reviews and fixes
+
+Two independent reviews ran on the complete Phase 4 code (see PHASE4_REVIEWS.md):
+- **Engineer + Data Analyst:** 4 High, 3 Medium, 3 Low.
+- **Privacy + Compliance + QA + Independent:** no Critical, conditional approval.
+
+The fixes are in commit `53f8922`, with regression tests:
+- **Rule change (Data Analyst):** de-duplication now uses hinge events as the backbone, and lower-precedence events pair one-to-one with the nearest kept event within ±10 s.
+- **Hinge baseline:** reset on activation, and "unknown" never changes it.
+- **Reconciliation:** slice protection.
+- **Background-task protection** for saves.
+- **Store-unavailable errors** for Shortcuts.
+- **Privacy:** export/temp-file hygiene and notes cleared on delete.
+- **Accessibility:** Undo persistence, Dynamic Type, Reduce Motion.
+- **Missing Today states.**
+- **Self-test:** fail state.
+
+## Open items carried to Phase 5
+
+- **P4-1:** compile and run the hinge hookup with Xcode 27.1 on an iPhone Duo.
+- **P4-2:** inner-display `ArrangementView` split and the half-folded tab bar (I-24).
+- **P4-3:** App Store wording, "Requires iPhone Duo for automatic counting" (Phase 6).
+- **P4-4:** v1.1 backlog (DST-normalised heat strip, custom History range).
