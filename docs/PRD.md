@@ -153,7 +153,9 @@ IDs map to MVP features. "AC" = acceptance criteria. All metrics follow `TECHNIC
 
 iCloud sync; Apple Watch app; social sharing/leaderboards; hinge "health" scores or warranty claims (FoldPulse cannot measure wear and must not imply it can); Android; monetization.
 
-## 9. Open product decisions for the Founder
+## 9. Product decisions (resolved 2026-11-09 — see DECISIONS.md)
+
+All recommendations below were accepted. **D-5 was decided as _paid up front_.**
 
 | # | Decision | PM recommendation |
 |---|---|---|

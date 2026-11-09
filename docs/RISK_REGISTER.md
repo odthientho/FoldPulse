@@ -32,6 +32,7 @@ Severity: Critical · High · Medium · Low. Likelihood: H / M / L.
 | R-19 | **Foreground fold may not be observable** if closing the phone backgrounds or locks the app before the `.closed` update arrives | High | M | Architect | Spike step 0 runs **before Phase 2**; re-scope if it fails | Open |
 | R-20 | Overstating the count as "lifetime" or "trustworthy". The count starts at install and can be edited | Medium | M | PM / Compliance | Copy uses "since install"; source breakdown and coverage metric | Designed – unverified |
 | R-21 | Late entry. Competitors (Duo Fold Counter ~#10 US Utilities on 2 Nov 2026; FoldMeter; Foldometer) are 2–3 months ahead | High | H | Founder Rep | Slim v1, ship fast, lead with the coverage/trust feature | Open — Founder decision |
+| R-26 | **Paid up front vs. free/cheap competitors**: lower conversion from browse to install; reviewers expect more polish for a paid app | Medium | H | Founder Rep / PM | Clear App Store screenshots of the differentiators (coverage, widgets); consider a launch price; revisit in Phase 6 | Open (accepted with D-5) |
 | R-16 | Scope creep (Watch, sync, social) | Low | M | PM | MVP_SCOPE out-of-scope list; change-control via Founder | Controlled |
 
 ## 2. Issue log (Phase 1 agent reviews)
@@ -39,9 +40,9 @@ Severity: Critical · High · Medium · Low. Likelihood: H / M / L.
 | ID | Description | Sev. | Raised by | Responsible | Proposed resolution | Status | Final decision |
 |---|---|---|---|---|---|---|---|
 | I-01 | The original brief's assumption that FoldPulse can "automatically count every fold" is false for background use | Critical | Architect | PM | Hybrid model; honest claim wording | Resolved | Adopted in PRD/feasibility |
-| I-02 | No ability to compile or device-test in the current environment | Critical | Architect | Founder | See R-01 | Open | **Awaiting Founder** |
-| I-03 | Competitors already exist | High | Founder Rep | PM | Differentiation plan PRD §4 | Open | **Awaiting Founder (D-1)** |
-| I-04 | Should inferred events count toward totals? | Medium | Data Analyst | PM | Excluded by default; toggle | Proposed | Awaiting Founder (D-2) |
+| I-02 | No ability to compile or device-test in the current environment | Critical | Architect | Founder | See R-01 | Open | Decided C-1 |
+| I-03 | Competitors already exist | High | Founder Rep | PM | Differentiation plan PRD §4 | Open | Decided D-1: build |
+| I-04 | Should inferred events count toward totals? | Medium | Data Analyst | PM | Excluded by default; toggle | Proposed | Decided D-2: excluded |
 | I-05 | Storing DailyStatistics vs. computing them | Medium | Data Analyst | Architect | Compute from the event log; optional cache invalidated on edit | Resolved | Event log is authoritative |
 | I-06 | "Cycle" definition was ambiguous in the brief | Medium | Data Analyst | Data Analyst | Unfold→next fold, both non-inferred | Resolved | Adopted |
 | I-07 | Milestone notifications require a permission prompt | Low | Founder Rep | UX | Opt-in only | Resolved | Adopted |
@@ -53,7 +54,7 @@ Severity: Critical · High · Medium · Low. Likelihood: H / M / L.
 | I-13 | Missing privacy manifest, privacy policy URL, iCloud Backup disclosure, CSV injection, export sensitivity | High | Privacy | Privacy | See PRIVACY_REVIEW.md | Resolved in design | Adopted |
 | I-14 | Inferred-event rule contradicted itself; resume could create a fake unfold; dedupe was one-directional | Critical | Data Analyst / Independent Reviewer | Data Analyst | Rules rewritten (feasibility §5–§6) | Resolved | Adopted |
 | I-15 | Phase 1 was marked "Complete" before the reviews happened | High | Independent Reviewer | PM | Status → "pending Founder review" | Resolved | Adopted |
-| I-16 | Core assumption (foreground fold observable) is tested too late | High | Independent Reviewer | Architect | Spike moved to Phase 1b, before design | Proposed | Awaiting Founder |
-| I-17 | Project docs live in a repository named "Church-Deacon-Election" | Low | Independent Reviewer | Founder | Move to a dedicated FoldPulse repository before Phase 3 | Open | Awaiting Founder |
+| I-16 | Core assumption (foreground fold observable) is tested too late | High | Independent Reviewer | Architect | Spike moved to Phase 1b, before design | Resolved | Decided C-2: spike first |
+| I-17 | Project docs live in a repository named "Church-Deacon-Election" | Low | Independent Reviewer | Founder | Move to a dedicated FoldPulse repository before Phase 3 | Resolved | Decided: own repo |
 
 
