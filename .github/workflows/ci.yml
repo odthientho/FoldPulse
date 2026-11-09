@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-linux:
+    name: Core tests (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test FoldPulseCore
+        run: swift test --package-path Packages/FoldPulseCore
+
+  ios:
+    name: iOS build & tests (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select the newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          XCODE="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)"
+          [ -n "$XCODE" ] && sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+          echo "SDK_VERSION=$(xcrun --sdk iphonesimulator --show-sdk-version)" >> "$GITHUB_ENV"
+      - name: Core tests (macOS)
+        run: swift test --package-path Packages/FoldPulseCore
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Pick a simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)["devices"]
+          ios=[(k,v) for k,v in d.items() if "iOS" in k]
+          ios.sort(key=lambda kv: [int(x) for x in kv[0].split("iOS-")[-1].split("-")])
+          for k,v in reversed(ios):
+              for dev in v:
+                  if dev["name"].startswith("iPhone"):
+                      print(dev["udid"]); sys.exit()
+          ')
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl list devices available | grep -E "Duo|iPhone" | head -20
+      - name: Build and test
+        run: |
+          # The app targets iOS 27.1 (iPhone Duo). If the runner's SDK is older,
+          # compile against the available SDK as a compile check only.
+          EXTRA=""
+          if [ "$(printf '%s\n27.1\n' "$SDK_VERSION" | sort -V | head -1)" != "27.1" ]; then
+            echo "::warning::Runner SDK $SDK_VERSION < 27.1 — deployment target lowered for a compile check only."
+            EXTRA="IPHONEOS_DEPLOYMENT_TARGET=$SDK_VERSION"
+          fi
+          set +e
+          xcodebuild test \
+            -project FoldPulse.xcodeproj -scheme FoldPulse \
+            -destination "id=$SIM_UDID" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO $EXTRA > xcodebuild.log 2>&1
+          STATUS=$?
+          grep -E "error:|warning: |Test Case .*(passed|failed)|Executed|\*\* " xcodebuild.log | tail -400
+          exit $STATUS
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            TestResults.xcresult
+            xcodebuild.log

@@ -1,0 +1,119 @@
+# XcodeGen spec for FoldPulse. Generate the Xcode project with:
+#   xcodegen generate          (or run scripts/setup_mac.sh)
+# The .xcodeproj is generated, not committed (see .gitignore).
+name: FoldPulse
+options:
+  bundleIdPrefix: io.github.odthientho
+  deploymentTarget:
+    iOS: "27.1"
+  createIntermediateGroups: true
+  groupSortPosition: top
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    SWIFT_STRICT_CONCURRENCY: complete
+packages:
+  FoldPulseCore:
+    path: Packages/FoldPulseCore
+targets:
+  FoldPulse:
+    type: application
+    platform: iOS
+    sources:
+      - path: FoldPulse
+      - path: Shared
+    dependencies:
+      - package: FoldPulseCore
+      - target: FoldPulseWidgets
+    entitlements:
+      path: FoldPulse/Resources/FoldPulse.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.io.github.odthientho.foldpulse
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.odthientho.foldpulse
+        PRODUCT_NAME: FoldPulse
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: FoldPulse
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+  FoldPulseWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: FoldPulseWidgets
+      - path: Shared
+    dependencies:
+      - package: FoldPulseCore
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    entitlements:
+      path: FoldPulseWidgets/FoldPulseWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.io.github.odthientho.foldpulse
+    info:
+      path: FoldPulseWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: FoldPulse
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.odthientho.foldpulse.widgets
+        PRODUCT_NAME: FoldPulseWidgets
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+  FoldPulseTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FoldPulseTests
+    dependencies:
+      - target: FoldPulse
+      - package: FoldPulseCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.odthientho.foldpulse.tests
+  FoldPulseUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: FoldPulseUITests
+    dependencies:
+      - target: FoldPulse
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.odthientho.foldpulse.uitests
+        TEST_TARGET_NAME: FoldPulse
+schemes:
+  FoldPulse:
+    build:
+      targets:
+        FoldPulse: all
+        FoldPulseWidgets: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      coverageTargets:
+        - FoldPulse
+      targets:
+        - FoldPulseTests
+        - FoldPulseUITests

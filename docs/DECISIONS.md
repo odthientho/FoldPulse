@@ -4,6 +4,7 @@ Product and technical decisions, newest first. Only the Founder makes product de
 
 | ID | Date | Decision | Decided by | Context / consequence |
 |---|---|---|---|---|
+| A-2 | 2026-11-09 | **Phase 2 approved** (design system, icon, screens, flows, widgets) | Founder | Open items carried: R-28 (verify background counting before pricing), I-24 (inner tab bar when partially folded → check in Phase 3) |
 | C-2r | 2026-11-09 | **Skip the remaining device tests; continue to Phase 2** | Founder | Foreground hinge counting was confirmed informally (5/5). Background automation is unverified (the trigger wasn't found). Background counting is designed as optional; S-1…S-7 become a Phase 5 gate. See SPIKE_RESULTS.md |
 | A-1 | 2026-11-09 | **Phase 1 approved** (feasibility report + documents) | Founder | Recommendation CONDITIONAL GO accepted |
 | C-2 | 2026-11-09 | **Run the device validation spike (Phase 1b) before Phase 2** | Founder | Phase 2 starts after spike results are reviewed. Kit: `docs/SPIKE_PLAN.md`, `spike/` |
