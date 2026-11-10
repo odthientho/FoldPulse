@@ -10,9 +10,9 @@ Results are from CI (GitHub Actions). The compact output of each run is publishe
 | Suite | Where | Tests | Result |
 |---|---|---|---|
 | FoldPulseCore | Linux (Swift 6.1) and macOS | 57 | All pass |
-| App unit tests (FoldPulseTests) | iOS simulator | 34 | All pass |
+| App unit tests (FoldPulseTests) | iOS simulator | 35 | All pass |
 | UI tests (FoldPulseUITests) | iOS simulator | 7 | All pass |
-| **Total** | | **98** | **0 failures** |
+| **Total** | | **99** (runs #22–#23) | **0 failures** |
 
 ### Functional, data and widget tests
 
@@ -71,3 +71,19 @@ Results are from CI (GitHub Actions). The compact output of each run is publishe
 | PF-06 Battery ≤ 1 % / 24 h | ⏳ Not verified | Informational |
 
 Steps for the Founder: `DEVICE_TEST_SESSION.md`.
+
+## 3. After the Phase 5 review fixes (run #23, commit `af2861a`)
+
+The review asked for realistic data: a file-backed store, about 5 % duplicate pairs, and gaps. It also asked for the first Insights open and memory to be measured. With that data:
+
+| ID | Measurement | Result | Target |
+|---|---|---|---|
+| PF-01 | Today at 110k, first / later | 540 / 431 ms | < 1 s ✅ |
+| PF-02 | Record at 110k (de-duplicate 879 + reload 386) | 1,281 ms | 300 ms on device: **release-blocking until measured (R5-2)** |
+| PF-03 | Insights at 110k, first open / later | 656 / 155–165 ms | < 1 s ✅ |
+| PF-04 | Cold launch (simulator) | 2.99 s | < 1 s on device: **release-blocking until measured (R5-2)** |
+| PF-05 | History at 50k | 1,358 ms | No hang ✅ |
+| PF-07 | Memory at 50k / 110k | 61 / 68 MB | Reported ✅ |
+
+- **Release build:** an unsigned arm64 device build of the shipping configuration builds in CI.
+- **PT-02:** the Release device binaries pass the framework allowlist and the networking-symbol scan. The Debug simulator audit skips the test-harness frameworks that `xcodebuild test` adds.

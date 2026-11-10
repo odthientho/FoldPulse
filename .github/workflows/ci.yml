@@ -122,7 +122,7 @@ jobs:
             done
             # Test-harness parts that `xcodebuild test` adds to the Debug app (never shipped) are skipped.
             list="$(find "$APP" -type f \( -perm -u+x -o -name '*.dylib' \) -not -path '*.xctest/*' -not -path '*/Frameworks/XC*' \
-                      -not -path '*/Frameworks/libXCTest*' -not -name '__preview.dylib' \
+                      -not -path '*/Frameworks/libXCTest*' -not -path '*/Frameworks/Testing.framework/*' -not -name 'lib_TestingInterop.dylib' -not -name '__preview.dylib' \
                       -exec sh -c 'file "$1" | grep -q Mach-O && echo "$1"' _ {} \;)"
             for b in $list; do
               echo "== $2: $b"
