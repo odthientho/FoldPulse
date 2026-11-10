@@ -120,13 +120,16 @@ jobs:
             for m in "$APP/PrivacyInfo.xcprivacy" "$APP/PlugIns/FoldPulseWidgets.appex/PrivacyInfo.xcprivacy"; do
               [ -f "$m" ] || { echo "::error::$2: privacy manifest missing: $m"; FAIL=1; }
             done
-            list="$(find "$APP" -type f \( -perm -u+x -o -name '*.dylib' \) -exec sh -c 'file "$1" | grep -q Mach-O && echo "$1"' _ {} \;)"
+            # Test-harness parts that `xcodebuild test` adds to the Debug app (never shipped) are skipped.
+            list="$(find "$APP" -type f \( -perm -u+x -o -name '*.dylib' \) -not -path '*.xctest/*' -not -path '*/Frameworks/XC*' \
+                      -not -path '*/Frameworks/libXCTest*' -not -name '__preview.dylib' \
+                      -exec sh -c 'file "$1" | grep -q Mach-O && echo "$1"' _ {} \;)"
             for b in $list; do
               echo "== $2: $b"
               if nm -u "$b" | grep -E "NSURLSession|URLSession|NSURLConnection|nw_connection|nw_endpoint|nw_parameters|CFNetwork|CFHTTP|CFStream.*Socket|SCNetworkReachability|CKContainer|CKDatabase|WKWebView|SFSafari|ASWebAuthentication|AsyncImage"; then FAIL=1; fi
               otool -L "$b" | tail -n +2 | awk '{print $1}' | while read -r lib; do
                 case "$lib" in
-                  /usr/lib/*|@rpath/FoldPulse.debug.dylib|@rpath/FoldPulseWidgets.debug.dylib|@rpath/libswift*) ;;
+                  /usr/lib/*|@rpath/FoldPulse.debug.dylib|@rpath/FoldPulseWidgets.debug.dylib|@rpath/libswift*|@rpath/FoldPulseCore_*) ;;
                   /System/Library/Frameworks/*|/System/Library/PrivateFrameworks/*)
                     name="$(basename "$lib")"
                     echo "$name" | grep -qxE "($ALLOWED)" || { echo "::error::$2: unexpected framework $lib in $b"; echo X >> fail.flag; } ;;
