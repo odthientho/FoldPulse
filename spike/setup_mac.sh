@@ -13,7 +13,7 @@ fail() { printf '\n\033[1;31mERROR: %s\033[0m\n' "$1"; exit 1; }
 
 say "Checking Xcode"
 command -v xcodebuild >/dev/null 2>&1 || fail "Xcode is not installed. Install Xcode 27.1+ from the Mac App Store, open it once, then run this again."
-xcodebuild -version | head -1
+xcodebuild -version | sed -n 1p  # reads all output: 'head' would end the pipe early and stop this script (pipefail)
 
 say "Getting the FoldPulse repository into $DIR"
 if [ -d "$DIR/.git" ]; then
@@ -29,7 +29,7 @@ else
   mkdir -p "$TOOLS"
   curl -fsSL -o "$TOOLS/xcodegen.zip" https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip
   unzip -oq "$TOOLS/xcodegen.zip" -d "$TOOLS"
-  XCODEGEN="$(find "$TOOLS" -type f -path '*/bin/xcodegen' | head -1)"
+  XCODEGEN="$(find "$TOOLS" -type f -path '*/bin/xcodegen' -print -quit)"
   [ -n "$XCODEGEN" ] || fail "Could not find xcodegen after download."
   chmod +x "$XCODEGEN"
 fi

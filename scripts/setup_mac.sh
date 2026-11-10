@@ -11,7 +11,7 @@ fail() { printf '\n\033[1;31mERROR: %s\033[0m\n' "$1"; exit 1; }
 
 say "Checking Xcode"
 command -v xcodebuild >/dev/null 2>&1 || fail "Install Xcode 27.1+ from the Mac App Store, open it once, then run this again."
-xcodebuild -version | head -1
+xcodebuild -version | sed -n 1p  # reads all output: 'head' would end the pipe early and stop this script (pipefail)
 
 say "Updating $DIR"
 if [ -d "$DIR/.git" ]; then git -C "$DIR" pull --ff-only; else git clone https://github.com/odthientho/FoldPulse.git "$DIR"; fi
@@ -26,7 +26,7 @@ else
   echo "a760b4bf97460341316a2c00d8c87b2946c6c2729eb57e9a72abb3ef7bc0ef82  $TOOLS/xcodegen.zip" | shasum -a 256 -c - >/dev/null \
     || fail "XcodeGen download didn't match its checksum."
   unzip -oq "$TOOLS/xcodegen.zip" -d "$TOOLS"
-  XCODEGEN="$(find "$TOOLS" -type f -path '*/bin/xcodegen' | head -1)"
+  XCODEGEN="$(find "$TOOLS" -type f -path '*/bin/xcodegen' -print -quit)"
   [ -n "$XCODEGEN" ] || fail "Could not find xcodegen after download."
   chmod +x "$XCODEGEN"
 fi
