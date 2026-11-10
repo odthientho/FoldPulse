@@ -1,0 +1,19 @@
+commit 69204bd run 24 xcodebuild_status=0
+	 Executed 3 tests, with 0 failures (0 unexpected) in 157.948 (157.951) seconds
+	 Executed 7 tests, with 0 failures (0 unexpected) in 285.409 (285.419) seconds
+	 Executed 7 tests, with 0 failures (0 unexpected) in 285.409 (285.421) seconds
+PERF PF-05 history events=50000 returned=10000 median_ms=2316
+PERF PF-03 summary first period=year events=110000 first_ms=786
+PERF PF-03 summary period=day events=110000 median_ms=175
+PERF PF-03 summary period=week events=110000 median_ms=182
+PERF PF-03 summary period=month events=110000 median_ms=230
+PERF PF-03 summary period=year events=110000 median_ms=183
+PERF PF-01 loadState events=50000 first_ms=361 median_ms=284
+PERF PF-07 memory events=50000 footprint_mb=61
+PERF PF-01 loadState events=110000 first_ms=543 median_ms=469
+PERF PF-07 memory events=110000 footprint_mb=68
+PERF PF-02 record+reconcile+loadState events=110000 median_ms=1489
+PERF PF-02 parts reconcile_ms=1213 loadState_ms=423
+/Users/runner/work/FoldPulse/FoldPulse/FoldPulseUITests/LaunchPerformanceTests.swift:7: Test Case '-[FoldPulseUITests.LaunchPerformanceTests testColdLaunchTime]' measured [Duration (AppLaunch), s] average: 3.148, relative standard deviation: 20.722%, values: [4.396921, 2.627636, 2.839079, 2.699681, 3.177732], performanceMetricID:com.apple.dt.XCTMetric_ApplicationLaunch-AppLaunch.duration, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.000, maxStandardDeviation: 0.000
+Release device build: OK
+PT-02: Debug simulator and Release device builds: only allowed frameworks, no networking APIs; privacy manifests present.
