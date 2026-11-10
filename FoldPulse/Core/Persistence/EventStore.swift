@@ -29,7 +29,8 @@ actor EventStore {
     // writer (DECISIONS T-2), so the kept counts can't go stale behind its back.
 
     /// Rows at least this old are folded into the kept counts.
-    static let settledAge: TimeInterval = 9 * 86_400
+    /// 10 days: covers the last 7 local days even after extreme travel (UTC+14 → UTC−12).
+    static let settledAge: TimeInterval = 10 * 86_400
     private var settledCounts: [LocalDay: Int]?
     private var settledBefore: Date = .distantPast
 
@@ -48,7 +49,7 @@ actor EventStore {
         return DayTally(foldsByDay: counts, firstTrackedDay: try firstTrackedDay())
     }
 
-    /// Today, the widget and the 7-day numbers need only the last 9 days plus the
+    /// Today, the widget and the 7-day numbers need only the last 10 days plus the
     /// total, so a first load doesn't wait for the full per-day counts.
     private func recentTally(now: Date) throws -> DayTally {
         if settledCounts != nil { return try tally(now: now) }
@@ -163,11 +164,13 @@ actor EventStore {
     /// Inserts many events with a single save. Rejects any existing id unless
     /// `checkingDuplicates` is false (fresh UUIDs only: test seeding, sample data).
     func add(contentsOf events: [FoldEvent], checkingDuplicates: Bool = true) throws {
-        if let earliest = events.map(\.timestamp).min() { try willChange(from: earliest) }
-        for event in events {
-            if checkingDuplicates, try row(event.id) != nil { throw StoreError.duplicateID(event.id) }
-            modelContext.insert(StoredEvent(event))
+        if checkingDuplicates { // check everything first, so a rejected batch inserts nothing
+            for event in events {
+                if try row(event.id) != nil { throw StoreError.duplicateID(event.id) }
+            }
         }
+        if let earliest = events.map(\.timestamp).min() { try willChange(from: earliest) }
+        for event in events { modelContext.insert(StoredEvent(event)) }
         try modelContext.save()
     }
 
@@ -324,10 +327,10 @@ actor EventStore {
 
     /// Erases everything (Settings → Reset all data).
     func deleteAll() throws {
+        settledCounts = nil // first, so a failed save can't leave stale counts
+        settledBefore = .distantPast
         try modelContext.delete(model: StoredEvent.self)
         try modelContext.save()
-        settledCounts = nil
-        settledBefore = .distantPast
     }
 
     private func find(_ id: UUID) throws -> StoredEvent {

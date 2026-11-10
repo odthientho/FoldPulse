@@ -81,7 +81,8 @@ final class AppModel {
         do {
             try await services.store.delete(id: event.id, now: .now)
         } catch {
-            lastError = String(describing: error)
+            lastError = String(describing: error) // kept on screen: no reload clears it (Phase 5 review)
+            return
         }
         await reload()
     }
@@ -91,6 +92,7 @@ final class AppModel {
             try await services.store.edit(event, now: .now)
         } catch {
             lastError = String(describing: error)
+            return
         }
         await reload()
     }
@@ -146,14 +148,20 @@ final class AppModel {
 
     /// Settings → Reset all data: events, widget snapshot, progress settings,
     /// export files and delivered milestone notifications.
-    func resetAllData() async {
-        do { try await services.store.deleteAll() } catch { lastError = String(describing: error) }
+    /// Returns false (and changes nothing else) if the events couldn't be erased.
+    @discardableResult
+    func resetAllData() async -> Bool {
+        do { try await services.store.deleteAll() } catch {
+            lastError = String(describing: error)
+            return false
+        }
         settings.resetData()
         Self.removeExports()
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
         pendingMilestone = nil
         lastManualEvent = nil
         await reload()
+        return true
     }
 
     /// Background-counting self-test (SCREEN_SPECIFICATIONS §8, USER_FLOWS F2).

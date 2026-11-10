@@ -114,7 +114,7 @@ schemes:
         FoldPulse: all
         FoldPulseWidgets: all
     run:
-      config: Debug
+      config: Release # device tests use the shipping configuration (Phase 5 privacy review)
     test:
       config: Debug
       gatherCoverageData: true

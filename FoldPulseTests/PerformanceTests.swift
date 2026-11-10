@@ -14,15 +14,24 @@ final class PerformanceTests: XCTestCase {
     }
 
     private func seeded(events count: Int) async throws -> (store: EventStore, container: ModelContainer) {
-        let container = try PersistenceController.makeContainer(inMemory: true)
+        // File-backed, like the app (SQLite file + journal), in a temporary folder.
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("perf-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        let container = try PersistenceController.makeContainer(url: folder.appendingPathComponent("Events.store"))
         let store = EventStore(modelContainer: container)
         let start = Date.now.addingTimeInterval(-Double(count) * 290)
         let sources: [DetectionSource] = [.hinge, .hinge, .hinge, .shortcut, .shortcut, .manual]
         var batch: [FoldEvent] = []
         batch.reserveCapacity(10_000)
         for i in 0..<count {
-            batch.append(FoldEvent(type: i % 2 == 0 ? .unfold : .fold, source: sources[i % sources.count],
-                                   timestamp: start.addingTimeInterval(Double(i) * 290)))
+            let time = start.addingTimeInterval(Double(i) * 290)
+            let type: EventType = i % 2 == 0 ? .unfold : .fold
+            batch.append(FoldEvent(type: type, source: sources[i % sources.count], timestamp: time))
+            // ~5 % of events also arrive from the Shortcut 3 s later (pairs for de-duplication),
+            // and every 500th unfold is missing (a gap for reconciliation to fill).
+            if i % 20 == 0 { batch.append(FoldEvent(type: type, source: .shortcut, timestamp: time.addingTimeInterval(3))) }
+            if i % 1_000 == 0 { batch.removeLast(2) } // the unfold and its Shortcut copy
             if batch.count == 10_000 {
                 try await store.add(contentsOf: batch, checkingDuplicates: false)
                 batch.removeAll(keepingCapacity: true)
@@ -30,6 +39,16 @@ final class PerformanceTests: XCTestCase {
         }
         if !batch.isEmpty { try await store.add(contentsOf: batch, checkingDuplicates: false) }
         return (store, container)
+    }
+
+    /// The test process's physical memory footprint (PF-07), in MB.
+    private static func footprintMB() -> Int {
+        var info = task_vm_info_data_t()
+        var size = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(size)) { task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &size) }
+        }
+        return result == KERN_SUCCESS ? Int(info.phys_footprint / 1_048_576) : -1
     }
 
     /// Median of `runs` timings, in milliseconds.
@@ -52,6 +71,7 @@ final class PerformanceTests: XCTestCase {
             let first = try await medianMilliseconds(runs: 1) { _ = try await fresh.loadState(now: .now, timeZone: .current) }
             let ms = try await medianMilliseconds { _ = try await fresh.loadState(now: .now, timeZone: .current) }
             print("PERF PF-01 loadState events=\(count) first_ms=\(Int(first)) median_ms=\(Int(ms))")
+            print("PERF PF-07 memory events=\(count) footprint_mb=\(Self.footprintMB())")
             XCTAssertLessThan(first, 3_000, "first load too slow at \(count) events")
             XCTAssertLessThan(ms, 1_000, "loadState too slow at \(count) events")
         }
@@ -72,7 +92,13 @@ final class PerformanceTests: XCTestCase {
     }
 
     func testInsightsSummaryAt110kEvents() async throws {
-        let store = try await seededStore(events: 110_000)
+        let seeded = try await seeded(events: 110_000)
+        // First Insights open after launch: a new store builds the full per-day counts.
+        let fresh = EventStore(modelContainer: seeded.container)
+        let first = try await medianMilliseconds(runs: 1) { _ = try await fresh.summary(.year, now: .now, timeZone: .current) }
+        print("PERF PF-03 summary first period=year events=110000 first_ms=\(Int(first))")
+        XCTAssertLessThan(first, 3_000)
+        let store = seeded.store
         for period in InsightPeriod.allCases {
             let ms = try await medianMilliseconds(runs: 3) { _ = try await store.summary(period, now: .now, timeZone: .current) }
             print("PERF PF-03 summary period=\(period.rawValue) events=110000 median_ms=\(Int(ms))")

@@ -53,7 +53,7 @@ Results are from CI (GitHub Actions). The compact output of each run is publishe
 | PF-04 | Cold launch (simulator) | 1.7 s (noisy) | **3.25 s** average (±10 %) | < 1 s on device: Part B |
 | PF-05 | History at 50k (capped at 10,000) | 1,388 ms | **1,347 ms** | No hang |
 
-**What changed:** the store used to read every event to compute totals and charts. It now keeps folds counted per day (built with one database count per day, updated before every write), and reads only the last 9 days in full. `DayTallyStoreTests` proves the kept counts always equal a full recount.
+**What changed:** the store used to read every event to compute totals and charts. It now keeps folds counted per day (built with one database count per day, updated before every write), and reads only the last 10 days in full. `DayTallyStoreTests` proves the kept counts always equal a full recount.
 
 **Honest note:** the CI simulator is a shared, slower virtual Mac. PF-02 (300 ms) and PF-04 (launch < 1 s) can only be confirmed on an iPhone Duo (Part B, Session 1). The de-duplication step re-reads a 7-day window by design (DECISIONS T-2). If it turns out slow on device, it is the first thing to tighten.
 

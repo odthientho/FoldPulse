@@ -117,6 +117,7 @@ struct ResetSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var confirmation = ""
+    @State private var failed = false
 
     var body: some View {
         NavigationStack {
@@ -126,9 +127,13 @@ struct ResetSheet: View {
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
                 Button("Delete everything", role: .destructive) {
-                    Task { await model.resetAllData(); dismiss() }
+                    Task { if await model.resetAllData() { dismiss() } else { failed = true } }
                 }
                 .disabled(confirmation != "RESET")
+                if failed {
+                    Text("Nothing was deleted: the data couldn't be erased. Restart FoldPulse and try again.")
+                        .foregroundStyle(.red)
+                }
             }
             .navigationTitle("Reset all data")
             .navigationBarTitleDisplayMode(.inline)
@@ -144,6 +149,7 @@ struct PrivacyView: View {
             Text("Your fold history stays on this iPhone. FoldPulse has no account, no servers, no analytics and no ads, and never sends your data anywhere.")
             Text("Your data is included in your own iCloud or computer backups of this iPhone, if you use them. Deleting FoldPulse deletes the data.")
             Text("Exports are created only when you ask, and shared only where you choose.")
+            Text("When you delete an event, it's hidden and its note is erased; its time stays on this iPhone so totals stay consistent. Reset all data erases everything.")
         }
         .navigationTitle("Privacy")
     }

@@ -63,4 +63,33 @@ final class DayTallyStoreTests: XCTestCase {
         try await store.deleteAll()
         try await assertMatchesFullLog(store, now: later)
     }
+
+    /// Travel (several capture zones), the public update/softDelete, and the clock going backwards.
+    func testKeptCountsWithTravelUpdatesAndClockChanges() async throws {
+        let store = EventStore(modelContainer: try PersistenceController.makeContainer(inMemory: true))
+        let now = Date(timeIntervalSince1970: 1_794_300_000)
+        let zones = ["Pacific/Kiritimati", "Etc/GMT+12", "Asia/Tokyo", "America/New_York"].compactMap(TimeZone.init(identifier:))
+        let seed = (0..<240).map { i in
+            FoldEvent(type: i % 2 == 0 ? .fold : .unfold, source: .hinge,
+                      timestamp: now.addingTimeInterval(-30 * 86_400 + Double(i) * 10_800), timeZone: zones[(i / 8) % zones.count])
+        }
+        try await store.add(contentsOf: seed)
+        _ = try await store.summary(.year, now: now, timeZone: zone) // builds the kept counts
+        try await assertMatchesFullLog(store, now: now)
+
+        // Public update (no reconcile): an old fold becomes an unfold.
+        var changed = try XCTUnwrap(seed.first { $0.type == .fold && $0.timestamp < now.addingTimeInterval(-20 * 86_400) })
+        changed.type = .unfold
+        try await store.update(changed, now: now)
+        try await assertMatchesFullLog(store, now: now)
+
+        // Public softDelete of an old fold.
+        let old = try XCTUnwrap(seed.last { $0.type == .fold && $0.timestamp < now.addingTimeInterval(-15 * 86_400) })
+        try await store.softDelete(id: old.id, now: now)
+        try await assertMatchesFullLog(store, now: now)
+
+        // The clock jumps 20 days back, then forward again.
+        try await assertMatchesFullLog(store, now: now.addingTimeInterval(-20 * 86_400))
+        try await assertMatchesFullLog(store, now: now.addingTimeInterval(3 * 86_400))
+    }
 }

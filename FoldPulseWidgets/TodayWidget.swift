@@ -57,6 +57,10 @@ struct SnapshotProvider: TimelineProvider {
 
 struct TodayWidgetView: View {
     @Environment(\.widgetFamily) private var family
+    /// Contains `.privacy` when the Lock Screen / StandBy hides sensitive content:
+    /// VoiceOver labels must not read the numbers out then (Phase 5 privacy review).
+    @Environment(\.redactionReasons) private var redaction
+    private var hidden: Bool { redaction.contains(.privacy) }
     let entry: SnapshotEntry
 
     private var display: WidgetSnapshot.Display { entry.snapshot.display(at: entry.date, timeZone: .current) }
@@ -90,10 +94,11 @@ struct TodayWidgetView: View {
             if display.isStale {
                 Text("as of \(display.generatedAt.formatted(date: .omitted, time: .shortened))")
                     .font(.caption2).foregroundStyle(FPColor.text2)
+                    .privacySensitive() // reveals when the last fold was recorded
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("FoldPulse. \(todayText) folds today. \(display.totalSinceInstall.formatted()) since install.")
+        .accessibilityLabel(Text(verbatim: hidden ? "FoldPulse" : "FoldPulse. \(todayText) folds today. \(display.totalSinceInstall.formatted()) since install."))
     }
 
     private var circular: some View {
@@ -106,7 +111,7 @@ struct TodayWidgetView: View {
         }
         .gaugeStyle(.accessoryCircularCapacity)
         .privacySensitive() // the gauge's fill reveals the count too (WIDGET_DESIGN §4)
-        .accessibilityLabel("\(todayText) folds today, daily average \(entry.snapshot.dailyAverage7d.map(String.init) ?? "not available yet")")
+        .accessibilityLabel(Text(verbatim: hidden ? "FoldPulse" : "\(todayText) folds today, daily average \(entry.snapshot.dailyAverage7d.map(String.init) ?? "not available yet")"))
     }
 
     private var rectangular: some View {
