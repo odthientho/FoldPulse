@@ -1,6 +1,8 @@
 # FoldPulse — Device Test Session (Phase 5, Part B)
 
-**For:** the Founder, with a Mac and an iPhone Duo · **Version:** 1.0 · 9 November 2026
+**For:** the Founder, with a Mac and an iPhone Duo · **Version:** 1.1 · 10 November 2026 (adds the Phase 5 review checks)
+
+Pressing ▶ installs the **Release** build, the same configuration that would ship (Phase 5 privacy review), so the results count for the App Store.
 
 These tests need real hardware; no computer in the cloud can run them. They're split into short sessions. **Do them in order, and stop anywhere.** Whatever isn't done is listed honestly as "not verified" in the Phase 5 report, and anything that blocks release says so.
 
@@ -22,17 +24,21 @@ When a step says **"Send:"**, reply to Claude with a short answer or a screensho
 4. **If Xcode shows a red error, Send:** a screenshot of it. It may be about the App Group or a "personal team"; that's risk R-29, and Claude will tell you the next step.
 5. When FoldPulse opens, go through the three welcome pages, then fold and unfold the phone 5 times with the app open.
    **Send:** a screenshot of **Today**. It should show **5** under "Folds counted since install".
+6. Close FoldPulse completely (swipe it away in the app switcher), wait 10 seconds, then open it again while counting "one, two…".
+   **Send:** roughly how long until the numbers appeared (PF-04, launch time).
 
 ## Session 2 — Quick checks (≈ 10 min) · closes P4-2 / I-24 and widget checks
 
 1. **Half-fold** the phone like a small laptop with FoldPulse open on the big screen.
    **Send:** a screenshot. Is any text or button hidden in the fold?
 2. Long-press the Home Screen → **Edit → Add Widget** → **FoldPulse** → add the small widget.
-   **Send:** a screenshot.
+   **Send:** a screenshot. It must show the **same number** as Today. (This proves the App Group works: risk R-29.)
 3. Lock Screen: long-press it → **Customize → Lock Screen** → add both FoldPulse widgets.
    **Send:** a screenshot of the Lock Screen.
-4. Put the phone on a charger, locked, on its side.
-   **Send:** does StandBy appear? Try it closed and open.
+4. **Lock** the phone and wake the screen without unlocking (WT-05).
+   **Send:** a screenshot of the Lock Screen. The fold numbers should be **hidden** (shown as dashes or blurred).
+5. Put the phone on a charger, locked, on its side.
+   **Send:** does StandBy appear? Try it closed and open. Are the numbers hidden there too?
 
 ## Session 3 — Background counting (≈ 10 min) · closes R-28 (S-2)
 
@@ -44,6 +50,9 @@ Only if your iPhone is on **iOS 27.2 or later** (Session 1, step 1).
    **Send:** a screenshot of the result (Working ✓ or the reason it failed).
 3. **Send:** were you ever asked to confirm the automation? (yes / no)
 
+4. **Before first unlock** (finding P-4): restart the phone. **Don't unlock it.** Close and open it 3 times, then unlock, open FoldPulse, close and open it 5 more times.
+   **Send:** a screenshot of Today. Is there any error message? Did the count go up by 5 or by 8?
+
 ## Session 4 — Accuracy (≈ 30 min, can be split) · S-1 and S-3
 
 Use a clicker, or a tally-counter app on another device. Click once **each time you close** the phone.
@@ -52,7 +61,9 @@ Use a clicker, or a tally-counter app on another device. Click once **each time 
    **Send:** your click total, and FoldPulse's increase.
 2. **With the phone locked** (needs Session 3): lock it, then close and open **100 times** without unlocking. Unlock and open FoldPulse.
    **Send:** your click total, and FoldPulse's increase.
-3. **Rotation:** with FoldPulse open, rotate the phone in every direction 20 times, open and half-folded, **without closing it**.
+3. **Large history (only if Session 4.2 passed):** in Xcode, choose **Product → Scheme → Edit Scheme → Run → Build Configuration → Debug**, press ▶, then in FoldPulse **Settings → Developer → Insert sample year (110,000 events)**. Wait until Today shows the new total. Repeat step 2 with 50 closes, then switch the scheme back to **Release**.
+   **Send:** your click total, and FoldPulse's increase.
+4. **Rotation:** with FoldPulse open, rotate the phone in every direction 20 times, open and half-folded, **without closing it**.
    **Send:** did the number change? (It shouldn't.)
 
 ## Session 5 — One day of normal use · privacy, battery, persistence

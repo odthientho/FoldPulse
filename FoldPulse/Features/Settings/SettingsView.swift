@@ -39,6 +39,7 @@ struct SettingsView: View {
                 #if DEBUG
                 Section {
                     Button("Insert sample week") { Task { await model.insertSampleData() } }
+                    Button("Insert sample year (110,000 events)") { Task { await model.insertSampleYear() } }
                 } header: {
                     Text("Developer (debug builds only)")
                 } footer: {

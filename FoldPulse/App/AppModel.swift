@@ -256,6 +256,24 @@ final class AppModel {
         await reload()
     }
 
+    /// Developer-only: a heavy user's year before today (~110,000 events), for the
+    /// device performance and large-history accuracy checks (DEVICE_TEST_SESSION 4.3).
+    func insertSampleYear(now: Date = .now, timeZone: TimeZone = .current) async {
+        let today = LocalDay(date: now, timeZone: timeZone)
+        do {
+            for offset in stride(from: -365, to: 0, by: 1) {
+                let start = today.adding(days: offset).start(in: timeZone).addingTimeInterval(6 * 3600)
+                let day = (0..<150).flatMap { i -> [FoldEvent] in
+                    let t = start.addingTimeInterval(Double(i) * 480)
+                    return [FoldEvent(type: .unfold, source: .hinge, timestamp: t, timeZone: timeZone),
+                            FoldEvent(type: .fold, source: .hinge, timestamp: t.addingTimeInterval(240), timeZone: timeZone)]
+                }
+                try await services.store.add(contentsOf: day, checkingDuplicates: false)
+            }
+        } catch { lastError = String(describing: error) }
+        await reload()
+    }
+
     func deleteAllData() async {
         await resetAllData()
     }
