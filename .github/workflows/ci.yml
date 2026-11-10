@@ -89,8 +89,16 @@ jobs:
           if [ $STATUS -ne 0 ]; then echo "----- last 80 lines -----"; tail -80 xcodebuild.log; fi
           grep -E "Executed [0-9]+ tests" xcodebuild.log | tail -2 >> "$GITHUB_STEP_SUMMARY" || true
           grep -E "PERF |measured \[" xcodebuild.log | tee -a "$GITHUB_STEP_SUMMARY" || true
+          # Compact results, published with the screenshots so they can be read with git.
+          {
+            echo "commit ${GITHUB_SHA::7} run ${GITHUB_RUN_NUMBER} xcodebuild_status=$STATUS"
+            grep -E "Executed [0-9]+ tests" xcodebuild.log | tail -3
+            grep -E "Test Case .* failed|: error: " xcodebuild.log | sort -u | head -100
+            grep -E "PERF |measured \[" xcodebuild.log
+          } > results.txt || true
           exit $STATUS
       - name: Privacy audit — no networking APIs linked in the built binaries (TEST_PLAN PT-02)
+        if: always()
         run: |
           set -e
           APP=build/Build/Products/Debug-iphonesimulator/FoldPulse.app
@@ -102,8 +110,8 @@ jobs:
             if nm -u "$b" | grep -E "NSURLSession|URLSession|NSURLConnection|nw_connection|nw_endpoint|CFNetwork|CFHTTP|CFStream.*Socket|SCNetworkReachability|CKContainer|CKDatabase"; then FOUND=1; fi
             otool -L "$b" | grep -E "Network.framework|CFNetwork|CloudKit" && FOUND=1 || true
           done
-          if [ $FOUND -ne 0 ]; then echo "::error::networking APIs referenced by the binary"; exit 1; fi
-          echo "PT-02: no networking APIs imported by FoldPulse or its widget." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ $FOUND -ne 0 ]; then echo "PT-02 FAILED: networking APIs referenced" >> results.txt; echo "::error::networking APIs referenced by the binary"; exit 1; fi
+          echo "PT-02: no networking APIs imported by FoldPulse or its widget." | tee -a "$GITHUB_STEP_SUMMARY" results.txt
       - name: Export screenshots
         if: always()
         run: |
@@ -135,6 +143,7 @@ jobs:
           print(sorted(os.listdir("publish")))
           PY
           cp screenshots/manifest.json publish/ 2>/dev/null || true
+          cp results.txt publish/ 2>/dev/null || true
           cd publish
           git init -q -b ci/screenshots
           git config user.name "foldpulse-ci"; git config user.email "ci@users.noreply.github.com"

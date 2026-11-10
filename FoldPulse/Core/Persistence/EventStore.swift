@@ -19,9 +19,102 @@ actor EventStore {
         case duplicateID(UUID)
     }
 
+    // MARK: Day tally (Phase 5 performance)
+    //
+    // Long-range numbers (total, averages, Insights) need only counted folds per
+    // day. Counts for rows older than `settledBefore` are kept here; newer rows are
+    // read fresh on every load. Every write first calls `willChange(from:)` with the
+    // earliest timestamp it can touch, which moves that boundary back (subtracting
+    // the affected rows while they are still unchanged). This actor is the only
+    // writer (DECISIONS T-2), so the kept counts can't go stale behind its back.
+
+    /// Rows at least this old are folded into the kept counts.
+    static let settledAge: TimeInterval = 9 * 86_400
+    private var settledCounts: [LocalDay: Int]?
+    private var settledBefore: Date = .distantPast
+
+    /// Counted folds per day, plus the first tracked day.
+    func tally(now: Date) throws -> DayTally {
+        let target = now.addingTimeInterval(-Self.settledAge)
+        if settledCounts == nil {
+            settledCounts = try foldCounts(from: .distantPast, before: target)
+            settledBefore = target
+        } else if target.timeIntervalSince(settledBefore) > 7 * 86_400 {
+            merge(try foldCounts(from: settledBefore, before: target), into: &settledCounts!, sign: 1)
+            settledBefore = target
+        }
+        var counts = settledCounts!
+        merge(try foldCounts(from: settledBefore, before: .distantFuture), into: &counts, sign: 1)
+        return DayTally(foldsByDay: counts, firstTrackedDay: try firstTrackedDay())
+    }
+
+    /// Call before changing any row with a timestamp at or after `time`.
+    private func willChange(from time: Date) throws {
+        guard settledCounts != nil, time < settledBefore else { return }
+        merge(try foldCounts(from: time, before: settledBefore), into: &settledCounts!, sign: -1)
+        settledBefore = time
+    }
+
+    private func merge(_ counts: [LocalDay: Int], into target: inout [LocalDay: Int], sign: Int) {
+        for (day, count) in counts { target[day, default: 0] += sign * count }
+    }
+
+    /// Counted folds per local day for rows with `from <= timestamp < before`: a
+    /// narrow query that reads three columns and never builds `FoldEvent` values.
+    /// Same rule as `FoldEvent.isCounted`: live, not a gap, and known source.
+    private func foldCounts(from: Date, before: Date) throws -> [LocalDay: Int] {
+        let fold = EventType.fold.rawValue
+        let sources = [DetectionSource.hinge, .shortcut, .manual].map(\.rawValue)
+        var descriptor = FetchDescriptor<StoredEvent>(predicate: #Predicate {
+            $0.typeRaw == fold && $0.deletedAt == nil && $0.duplicateOf == nil && sources.contains($0.sourceRaw)
+                && $0.timestamp >= from && $0.timestamp < before
+        })
+        descriptor.propertiesToFetch = [\.localDay, \.timestamp, \.timeZoneID]
+        var days: [String: LocalDay] = [:]
+        var result: [LocalDay: Int] = [:]
+        for row in try modelContext.fetch(descriptor) {
+            let day: LocalDay
+            if let known = days[row.localDay] {
+                day = known
+            } else if let parsed = LocalDay(string: row.localDay) {
+                days[row.localDay] = parsed
+                day = parsed
+            } else { // unreadable stored day: derive it, as `domainEvent` does
+                day = LocalDay(date: row.timestamp, timeZone: TimeZone(identifier: row.timeZoneID) ?? FoldEvent.fallbackTimeZone)
+            }
+            result[day, default: 0] += 1
+        }
+        return result
+    }
+
+    /// The earliest local day with any live event (`Statistics.firstTrackedDay`).
+    private func firstTrackedDay() throws -> LocalDay? {
+        let types = EventType.allCases.map(\.rawValue)
+        let sources = DetectionSource.allCases.map(\.rawValue)
+        var descriptor = FetchDescriptor<StoredEvent>(
+            predicate: #Predicate { $0.deletedAt == nil && $0.duplicateOf == nil && types.contains($0.typeRaw) && sources.contains($0.sourceRaw) },
+            sortBy: [SortDescriptor(\.localDay)])
+        descriptor.fetchLimit = 1
+        descriptor.propertiesToFetch = [\.localDay, \.timestamp, \.timeZoneID]
+        guard let row = try modelContext.fetch(descriptor).first else { return nil }
+        return LocalDay(string: row.localDay)
+            ?? LocalDay(date: row.timestamp, timeZone: TimeZone(identifier: row.timeZoneID) ?? FoldEvent.fallbackTimeZone)
+    }
+
+    /// Non-deleted events with `timestamp >= since`, oldest first.
+    private func events(since: Date) throws -> [FoldEvent] {
+        let descriptor = FetchDescriptor<StoredEvent>(predicate: #Predicate { $0.deletedAt == nil && $0.timestamp >= since },
+                                                      sortBy: [SortDescriptor(\.timestamp)])
+        var zones: [String: TimeZone] = [:]
+        return try modelContext.fetch(descriptor).compactMap { $0.domainEvent(zones: &zones) }
+    }
+
+    // MARK: Writing and reading
+
     /// Inserts a new event. Rejects an id that already exists.
     func add(_ event: FoldEvent) throws {
         if try row(event.id) != nil { throw StoreError.duplicateID(event.id) }
+        try willChange(from: event.timestamp)
         modelContext.insert(StoredEvent(event))
         try modelContext.save()
     }
@@ -29,6 +122,7 @@ actor EventStore {
     /// Inserts many events with a single save. Rejects any existing id unless
     /// `checkingDuplicates` is false (fresh UUIDs only: test seeding, sample data).
     func add(contentsOf events: [FoldEvent], checkingDuplicates: Bool = true) throws {
+        if let earliest = events.map(\.timestamp).min() { try willChange(from: earliest) }
         for event in events {
             if checkingDuplicates, try row(event.id) != nil { throw StoreError.duplicateID(event.id) }
             modelContext.insert(StoredEvent(event))
@@ -48,10 +142,16 @@ actor EventStore {
     }
 
     /// Everything the UI needs, computed here — off the main thread — in one pass.
+    /// Reads the day tally, the last few days' events and the newest `recentLimit`
+    /// live events, never the whole log (Phase 5 performance, PF-01).
     func loadState(now: Date, timeZone: TimeZone, recentLimit: Int = 500) throws -> LoadedState {
-        let events = try allEvents()
-        return LoadedState(dashboard: DashboardStats.make(from: events, now: now, timeZone: timeZone),
-                           recentEvents: Array(events.filter(\.isLive).suffix(recentLimit).reversed()))
+        let week = try events(since: now.addingTimeInterval(-Self.settledAge))
+        var newest = FetchDescriptor<StoredEvent>(predicate: #Predicate { $0.deletedAt == nil && $0.duplicateOf == nil },
+                                                  sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
+        newest.fetchLimit = recentLimit
+        var zones: [String: TimeZone] = [:]
+        return LoadedState(dashboard: DashboardStats.make(tally: try tally(now: now), recent: week, now: now, timeZone: timeZone),
+                           recentEvents: try modelContext.fetch(newest).compactMap { $0.domainEvent(zones: &zones) })
     }
 
     func count() throws -> Int {
@@ -61,6 +161,7 @@ actor EventStore {
     /// Replaces an existing event's fields and bumps `updatedAt`.
     func update(_ event: FoldEvent, now: Date = .now) throws {
         let row = try find(event.id)
+        try willChange(from: min(row.timestamp, event.timestamp))
         var changed = event
         changed.updatedAt = now
         row.apply(changed)
@@ -70,6 +171,7 @@ actor EventStore {
     /// Tombstones an event (never physically removed, so imports can't resurrect it).
     func softDelete(id: UUID, now: Date = .now) throws {
         let row = try find(id)
+        try willChange(from: row.timestamp)
         row.deletedAt = now
         row.updatedAt = now
         row.note = nil // a deleted event keeps no personal text (Phase 4 privacy review)
@@ -89,6 +191,7 @@ actor EventStore {
     func edit(_ event: FoldEvent, now: Date) throws {
         let row = try find(event.id)
         let previousTime = row.timestamp
+        try willChange(from: min(previousTime, event.timestamp))
         var changed = event
         changed.isEdited = true
         changed.updatedAt = now
@@ -111,6 +214,7 @@ actor EventStore {
     func reconcile(around times: [Date], now: Date) throws {
         guard let earliest = times.min() else { return }
         let from = earliest.addingTimeInterval(-7 * 86_400)
+        try willChange(from: from)
         let descriptor = FetchDescriptor<StoredEvent>(
             predicate: #Predicate { $0.deletedAt == nil && $0.timestamp >= from },
             sortBy: [SortDescriptor(\.timestamp)])
@@ -139,7 +243,8 @@ actor EventStore {
 
     /// Insights summary for a period, computed off the main thread.
     func summary(_ period: InsightPeriod, now: Date, timeZone: TimeZone) throws -> PeriodSummary {
-        Statistics.summary(try allEvents(), period: period, now: now, timeZone: timeZone)
+        Statistics.summary(tally: try tally(now: now), recent: try events(since: now.addingTimeInterval(-3 * 86_400)),
+                           period: period, now: now, timeZone: timeZone)
     }
 
     /// History: live events newest first, optionally since a date and limited to sources.
@@ -180,6 +285,8 @@ actor EventStore {
     func deleteAll() throws {
         try modelContext.delete(model: StoredEvent.self)
         try modelContext.save()
+        settledCounts = nil
+        settledBefore = .distantPast
     }
 
     private func find(_ id: UUID) throws -> StoredEvent {

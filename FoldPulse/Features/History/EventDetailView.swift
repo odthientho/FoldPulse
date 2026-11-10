@@ -20,7 +20,10 @@ struct EventDetailView: View {
             }
             Section {
                 LabeledContent("Source") { SourceBadge(source: event.source) }
-                if event.isEdited { LabeledContent("Edited", value: "Yes — the original source is kept") }
+                if event.isEdited {
+                    LabeledContent("Edited", value: "Yes — the original source is kept")
+                        .accessibilityIdentifier("editedRow")
+                }
                 if let start = event.inferredIntervalStart, let end = event.inferredIntervalEnd {
                     LabeledContent("Missed between", value: "\(start.formatted(date: .abbreviated, time: .shortened)) – \(end.formatted(date: .omitted, time: .shortened))")
                 }

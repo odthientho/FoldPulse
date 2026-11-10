@@ -42,7 +42,7 @@ final class QAFunctionalTests: XCTestCase {
         app.buttons["Unfold"].tap()
         app.buttons["Save"].tap()
         XCTAssertTrue(app.staticTexts["Unfold"].waitForExistence(timeout: 5), "detail shows the new type")
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Yes'")).firstMatch.exists, "marked edited")
+        XCTAssertTrue(app.descendants(matching: .any)["editedRow"].waitForExistence(timeout: 5), "marked edited")
 
         app.navigationBars.buttons.element(boundBy: 0).tap() // back to History
         app.buttons["Shortcut"].tap()

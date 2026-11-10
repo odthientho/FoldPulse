@@ -38,10 +38,18 @@ extension Statistics {
     /// Builds the Insights summary for `period` ending at `now`.
     public static func summary(_ events: [FoldEvent], period: InsightPeriod, now: Date, timeZone: TimeZone,
                                includeInferred: Bool = false) -> PeriodSummary {
-        let counted = events.filter { $0.type == .fold && $0.isCounted(includeInferred: includeInferred) }
+        summary(tally: DayTally(events: events, includeInferred: includeInferred), recent: events, period: period,
+                now: now, timeZone: timeZone, includeInferred: includeInferred)
+    }
+
+    /// Builds the Insights summary from a day tally plus today's events
+    /// (`recent` may hold more; only today's are used, for the hourly chart).
+    public static func summary(tally: DayTally, recent: [FoldEvent], period: InsightPeriod, now: Date, timeZone: TimeZone,
+                               includeInferred: Bool = false) -> PeriodSummary {
         let today = LocalDay(date: now, timeZone: timeZone)
-        let first = firstTrackedDay(events)
-        let byDay = countsByDay(counted, includeInferred: includeInferred)
+        let counted = recent.filter { $0.type == .fold && $0.localDay == today && $0.isCounted(includeInferred: includeInferred) }
+        let first = tally.firstTrackedDay
+        let byDay = tally.foldsByDay
 
         func sum(_ days: [LocalDay]) -> Int { days.reduce(0) { $0 + (byDay[$1] ?? 0) } }
         func fullDayAverage(_ days: [LocalDay]) -> Double? {
@@ -58,7 +66,7 @@ extension Statistics {
         case .day:
             var hours = Array(repeating: 0, count: 24)
             var calendar = Calendar(identifier: .gregorian)
-            for event in counted where event.localDay == today {
+            for event in counted {
                 calendar.timeZone = event.timeZone
                 hours[calendar.component(.hour, from: event.timestamp)] += 1
             }
@@ -86,7 +94,7 @@ extension Statistics {
             return PeriodSummary(period: period,
                                  buckets: days.map { PeriodBucket(key: .day($0), count: byDay[$0] ?? 0, isCurrent: $0 == today) },
                                  total: sum(days), previousTotal: previousTotal,
-                                 busiestDay: busiestDay(counted, days: days, includeInferred: includeInferred),
+                                 busiestDay: tally.busiestDay(days),
                                  averagePerFullDay: fullDayAverage(days))
 
         case .year:
@@ -100,7 +108,7 @@ extension Statistics {
             return PeriodSummary(period: .year,
                                  buckets: months.enumerated().map { PeriodBucket(key: .month(year: today.year, month: $0.offset + 1), count: $0.element, isCurrent: $0.offset + 1 == today.month) },
                                  total: months.reduce(0, +), previousTotal: trackedLastYear ? previousYear : nil,
-                                 busiestDay: busiestDay(counted, days: days, includeInferred: includeInferred),
+                                 busiestDay: tally.busiestDay(days),
                                  averagePerFullDay: fullDayAverage(days))
         }
     }

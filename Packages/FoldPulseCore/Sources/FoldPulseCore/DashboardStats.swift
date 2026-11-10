@@ -16,11 +16,19 @@ public struct DashboardStats: Sendable, Equatable {
     }
 
     public static func make(from events: [FoldEvent], now: Date, timeZone: TimeZone, includeInferred: Bool = false) -> DashboardStats {
-        let snapshot = WidgetSnapshot.make(from: events, now: now, timeZone: timeZone, includeInferred: includeInferred)
+        make(tally: DayTally(events: events, includeInferred: includeInferred), recent: events, now: now,
+             timeZone: timeZone, includeInferred: includeInferred)
+    }
+
+    /// Builds the dashboard from a day tally plus every event whose local day is
+    /// in the last 7 days (`recent` may hold more; older ones are ignored).
+    public static func make(tally: DayTally, recent: [FoldEvent], now: Date, timeZone: TimeZone,
+                            includeInferred: Bool = false) -> DashboardStats {
+        let snapshot = WidgetSnapshot.make(tally: tally, recent: recent, now: now, timeZone: timeZone, includeInferred: includeInferred)
         let week = LocalDay.range(from: snapshot.localDay.adding(days: -6), through: snapshot.localDay)
         return DashboardStats(snapshot: snapshot,
-                              coverage: Statistics.coverage(events, days: Set(week)),
-                              lastSevenDays: Statistics.series(events, days: week, includeInferred: includeInferred))
+                              coverage: Statistics.coverage(recent, days: Set(week)),
+                              lastSevenDays: tally.series(week))
     }
 
     public static func empty(now: Date, timeZone: TimeZone) -> DashboardStats {

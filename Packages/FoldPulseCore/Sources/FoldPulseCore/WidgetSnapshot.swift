@@ -39,17 +39,24 @@ public struct WidgetSnapshot: Codable, Sendable, Equatable {
 
     /// Builds a snapshot from the event log.
     public static func make(from events: [FoldEvent], now: Date, timeZone: TimeZone, includeInferred: Bool = false) -> WidgetSnapshot {
+        make(tally: DayTally(events: events, includeInferred: includeInferred), recent: events, now: now,
+             timeZone: timeZone, includeInferred: includeInferred)
+    }
+
+    /// Builds a snapshot from a day tally plus the events of today (`recent`
+    /// may hold more; only today's are used).
+    public static func make(tally: DayTally, recent: [FoldEvent], now: Date, timeZone: TimeZone,
+                            includeInferred: Bool = false) -> WidgetSnapshot {
         let today = LocalDay(date: now, timeZone: timeZone)
-        let todays = events.filter { $0.localDay == today }
-        let total = Statistics.total(events, type: .fold, includeInferred: includeInferred)
-        let average = Statistics.dailyAverage(events, today: today, includeInferred: includeInferred)
+        let todays = recent.filter { $0.localDay == today }
+        let total = tally.total
         return WidgetSnapshot(
             generatedAt: now,
             localDay: today,
-            todayFolds: Statistics.total(todays, type: .fold, includeInferred: includeInferred),
+            todayFolds: tally.count(on: today),
             todayUnfolds: Statistics.total(todays, type: .unfold, includeInferred: includeInferred),
             totalSinceInstall: total,
-            dailyAverage7d: average.map { Int($0.rounded()) },
+            dailyAverage7d: tally.dailyAverage(today: today).map { Int($0.rounded()) },
             nextMilestone: Milestones.next(after: total)
         )
     }

@@ -74,19 +74,12 @@ public enum Statistics {
     /// counting zero days, and never before the first tracked day.
     /// Returns nil when no full day is available yet.
     public static func dailyAverage(_ events: [FoldEvent], today: LocalDay, window: Int = 7, includeInferred: Bool = false) -> Double? {
-        guard window > 0, let first = firstTrackedDay(events) else { return nil }
-        let windowStart = max(today.adding(days: -window), first)
-        let days = LocalDay.range(from: windowStart, through: today.adding(days: -1))
-        guard !days.isEmpty else { return nil }
-        let sum = series(events, days: days, includeInferred: includeInferred).reduce(0) { $0 + $1.count }
-        return Double(sum) / Double(days.count)
+        DayTally(events: events, includeInferred: includeInferred).dailyAverage(today: today, window: window)
     }
 
     /// The day with the most folds among `days` (earliest wins a tie). Nil if all are zero.
     public static func busiestDay(_ events: [FoldEvent], days: [LocalDay], includeInferred: Bool = false) -> DayCount? {
-        let counts = series(events, days: days, includeInferred: includeInferred)
-        guard let best = counts.max(by: { ($0.count, $1.day) < ($1.count, $0.day) }), best.count > 0 else { return nil }
-        return best
+        DayTally(events: events, includeInferred: includeInferred).busiestDay(days)
     }
 
     /// Fold coverage by source over `days`.
