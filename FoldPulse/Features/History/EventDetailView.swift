@@ -40,7 +40,9 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $editing) {
             EditEventSheet(event: event) { updated in
-                event = updated
+                var shown = updated
+                shown.isEdited = true // the store marks it too; show it now (BUGS B-01)
+                event = shown
                 Task { await model.edit(updated) }
             }
         }

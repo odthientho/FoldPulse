@@ -11,18 +11,21 @@ public struct DayTally: Sendable, Equatable {
     /// The earliest local day with any live event.
     public var firstTrackedDay: LocalDay?
 
-    public init(foldsByDay: [LocalDay: Int], firstTrackedDay: LocalDay?) {
+    /// All counted folds since install.
+    public var total: Int
+
+    /// `total` defaults to the sum of `foldsByDay`. Pass it when `foldsByDay`
+    /// holds only recent days (enough for Today and the widget, not Insights).
+    public init(foldsByDay: [LocalDay: Int], firstTrackedDay: LocalDay?, total: Int? = nil) {
         self.foldsByDay = foldsByDay.filter { $0.value != 0 }
         self.firstTrackedDay = firstTrackedDay
+        self.total = total ?? foldsByDay.values.reduce(0, +)
     }
 
     public init(events: [FoldEvent], includeInferred: Bool = false) {
         self.init(foldsByDay: Statistics.countsByDay(events, type: .fold, includeInferred: includeInferred),
                   firstTrackedDay: Statistics.firstTrackedDay(events))
     }
-
-    /// All counted folds since install.
-    public var total: Int { foldsByDay.values.reduce(0, +) }
 
     public func count(on day: LocalDay) -> Int { foldsByDay[day] ?? 0 }
 

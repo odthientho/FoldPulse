@@ -37,7 +37,7 @@ actor EventStore {
     func tally(now: Date) throws -> DayTally {
         let target = now.addingTimeInterval(-Self.settledAge)
         if settledCounts == nil {
-            settledCounts = try foldCounts(from: .distantPast, before: target)
+            settledCounts = try settledFoldCounts(before: target)
             settledBefore = target
         } else if target.timeIntervalSince(settledBefore) > 7 * 86_400 {
             merge(try foldCounts(from: settledBefore, before: target), into: &settledCounts!, sign: 1)
@@ -46,6 +46,52 @@ actor EventStore {
         var counts = settledCounts!
         merge(try foldCounts(from: settledBefore, before: .distantFuture), into: &counts, sign: 1)
         return DayTally(foldsByDay: counts, firstTrackedDay: try firstTrackedDay())
+    }
+
+    /// Today, the widget and the 7-day numbers need only the last 9 days plus the
+    /// total, so a first load doesn't wait for the full per-day counts.
+    private func recentTally(now: Date) throws -> DayTally {
+        if settledCounts != nil { return try tally(now: now) }
+        let boundary = now.addingTimeInterval(-Self.settledAge)
+        let recent = try foldCounts(from: boundary, before: .distantFuture)
+        let older = try modelContext.fetchCount(countedFolds(from: .distantPast, before: boundary))
+        return DayTally(foldsByDay: recent, firstTrackedDay: try firstTrackedDay(),
+                        total: older + recent.values.reduce(0, +))
+    }
+
+    private func countedFolds(from: Date, before: Date, day: String? = nil) -> FetchDescriptor<StoredEvent> {
+        let fold = EventType.fold.rawValue
+        let sources = [DetectionSource.hinge, .shortcut, .manual].map(\.rawValue)
+        if let day {
+            return FetchDescriptor<StoredEvent>(predicate: #Predicate {
+                $0.localDay == day && $0.typeRaw == fold && $0.deletedAt == nil && $0.duplicateOf == nil
+                    && sources.contains($0.sourceRaw) && $0.timestamp >= from && $0.timestamp < before
+            })
+        }
+        return FetchDescriptor<StoredEvent>(predicate: #Predicate {
+            $0.typeRaw == fold && $0.deletedAt == nil && $0.duplicateOf == nil && sources.contains($0.sourceRaw)
+                && $0.timestamp >= from && $0.timestamp < before
+        })
+    }
+
+    /// Full per-day counts for rows before `before`, built with one indexed
+    /// COUNT per day (no rows loaded). Falls back to reading rows if the counts
+    /// don't add up (e.g. an unreadable stored day) or the range is implausible.
+    private func settledFoldCounts(before: Date) throws -> [LocalDay: Int] {
+        guard let first = try firstTrackedDay() else { return [:] }
+        let last = LocalDay(date: before, timeZone: FoldEvent.fallbackTimeZone).adding(days: 2)
+        let days = LocalDay.range(from: first, through: last)
+        guard days.count <= 3_700 else { return try foldCounts(from: .distantPast, before: before) }
+        var result: [LocalDay: Int] = [:]
+        var sum = 0
+        for day in days {
+            let count = try modelContext.fetchCount(countedFolds(from: .distantPast, before: before, day: day.description))
+            if count > 0 { result[day] = count; sum += count }
+        }
+        guard sum == (try modelContext.fetchCount(countedFolds(from: .distantPast, before: before))) else {
+            return try foldCounts(from: .distantPast, before: before)
+        }
+        return result
     }
 
     /// Call before changing any row with a timestamp at or after `time`.
@@ -63,12 +109,7 @@ actor EventStore {
     /// narrow query that reads three columns and never builds `FoldEvent` values.
     /// Same rule as `FoldEvent.isCounted`: live, not a gap, and known source.
     private func foldCounts(from: Date, before: Date) throws -> [LocalDay: Int] {
-        let fold = EventType.fold.rawValue
-        let sources = [DetectionSource.hinge, .shortcut, .manual].map(\.rawValue)
-        var descriptor = FetchDescriptor<StoredEvent>(predicate: #Predicate {
-            $0.typeRaw == fold && $0.deletedAt == nil && $0.duplicateOf == nil && sources.contains($0.sourceRaw)
-                && $0.timestamp >= from && $0.timestamp < before
-        })
+        var descriptor = countedFolds(from: from, before: before)
         descriptor.propertiesToFetch = [\.localDay, \.timestamp, \.timeZoneID]
         var days: [String: LocalDay] = [:]
         var result: [LocalDay: Int] = [:]
@@ -150,7 +191,7 @@ actor EventStore {
                                                   sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
         newest.fetchLimit = recentLimit
         var zones: [String: TimeZone] = [:]
-        return LoadedState(dashboard: DashboardStats.make(tally: try tally(now: now), recent: week, now: now, timeZone: timeZone),
+        return LoadedState(dashboard: DashboardStats.make(tally: try recentTally(now: now), recent: week, now: now, timeZone: timeZone),
                            recentEvents: try modelContext.fetch(newest).compactMap { $0.domainEvent(zones: &zones) })
     }
 
